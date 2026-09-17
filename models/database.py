@@ -71,6 +71,7 @@ class JobPostingORM(Base):
     )
     experience_level: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_remote: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_internship: Mapped[bool] = mapped_column(Boolean, default=False)
     skills_mentioned: Mapped[list] = mapped_column(JSON, default=list)
     easy_apply: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -92,12 +93,35 @@ class ApplicationORM(Base):
     )
     fit_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
+    cover_letter: Mapped[str] = mapped_column(Text, default="")
     resume_version: Mapped[str] = mapped_column(String(64), default="default")
     cover_letter_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     follow_up_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     interview_dates: Mapped[list] = mapped_column(JSON, default=list)
     offer_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class UserProfileORM(Base):
+    """Persisted User Profile for fast match & auto-apply matching."""
+
+    __tablename__ = "user_profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default="default")
+    full_name: Mapped[str] = mapped_column(String(128), default="Developer Candidate")
+    email: Mapped[str] = mapped_column(String(128), default="candidate@example.com")
+    phone: Mapped[str] = mapped_column(String(32), default="+91 9876543210")
+    location: Mapped[str] = mapped_column(String(128), default="Bangalore, India")
+    target_roles: Mapped[list] = mapped_column(JSON, default=lambda: ["AI Engineer", "Software Engineer", "Data Scientist", "Full Stack Developer"])
+    skills: Mapped[list] = mapped_column(JSON, default=lambda: ["Python", "FastAPI", "React", "Machine Learning", "SQL", "Docker", "Git", "AI Agent System"])
+    experience_level: Mapped[str] = mapped_column(String(32), default="ENTRY_LEVEL")
+    prefer_internships: Mapped[bool] = mapped_column(Boolean, default=True)
+    bio: Mapped[str] = mapped_column(Text, default="Passionate developer experienced in Python, AI systems, and full-stack web applications.")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
 
 
 class PredictionORM(Base):
