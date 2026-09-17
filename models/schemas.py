@@ -201,7 +201,12 @@ class AgentMessage(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     error: str | None = None             # Populated on MessageType.ERROR
 
+    @property
+    def msg_type(self) -> MessageType:
+        return self.type
+
     def reply(
+
         self,
         sender: str,
         payload: dict[str, Any],
