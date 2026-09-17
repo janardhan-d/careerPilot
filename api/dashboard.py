@@ -665,8 +665,9 @@ function renderJobs(jobs) {
     const ageTag = j.posted_age_str || 'Released Today';
 
     let targetUrl = j.source_url || '';
-    if (!targetUrl || targetUrl.includes('/jobs/view/data-analyst-') || targetUrl.includes('/jobs/view/ai-intern-') || targetUrl.includes('/jobs/view/python-developer-') || targetUrl.includes('/jobs/view/financial-analyst-') || targetUrl.includes('/jobs/view/ml-engineer-') || targetUrl === '#') {
-      targetUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(j.title + ' ' + j.company)}&location=${encodeURIComponent(j.location || 'India')}`;
+    if (!targetUrl || targetUrl.includes('/jobs/view/') || targetUrl === '#') {
+      const cleanTitle = (j.title || 'Data Analyst').split('—')[0].split('/')[0].trim();
+      targetUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(cleanTitle)}&location=${encodeURIComponent(j.location || 'India')}`;
     }
 
     return `
