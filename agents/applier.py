@@ -48,8 +48,9 @@ class ApplierAgent(BaseAgent):
 
     async def handle_message(self, message: AgentMessage) -> None:
         """Handle incoming message bus events."""
-        if message.msg_type == MessageType.GOAL_SUBMITTED:
-            logger.info("applier.goal_received", goal=message.payload.get("goal"))
+        if message.type == MessageType.EVENT:
+            logger.info("applier.event_received", event=message.payload.get("event"))
+
 
     async def get_profile(self) -> dict[str, Any]:
         """Fetch the default user profile."""

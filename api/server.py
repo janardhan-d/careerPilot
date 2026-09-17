@@ -215,7 +215,8 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
             "company": j.company,
             "location": j.location,
             "is_remote": j.is_remote,
-            "is_internship": j.is_internship or ("intern" in j.title.lower()),
+            "is_internship": bool(getattr(j, "is_internship", False) or ("intern" in (j.title or "").lower())),
+
             "easy_apply": j.easy_apply,
             "source": j.source,
             "source_url": j.source_url,
