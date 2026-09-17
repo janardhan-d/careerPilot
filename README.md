@@ -1,261 +1,115 @@
-# CareerPilot 🚀
-
-> **Multi-Agent AI System for Autonomous Job Application Management**  
-> Three specialized agents — Commander 🧠, Tracker 📡, Predictor 🔮 — collaborate to manage your entire job search pipeline.
-
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-orange)](https://github.com/astral-sh/ruff)
-[![Type Checked: MyPy](https://img.shields.io/badge/types-mypy-informational)](https://mypy-lang.org)
+# 🤖 Smart AI Job Agent — Autonomous Multi-Agent Application System
+> **Candidate Profile:** Janardhan Devarala | **Target Locations:** Hyderabad, Bangalore, Remote India  
+> **Tech Stack:** Python 3.11, FastAPI, SQLAlchemy (Async), Uvicorn, MessageBus, Localtunnel, GitHub  
 
 ---
 
-## Architecture
+## 🌟 Overview
+**Smart AI Job Agent** is an autonomous multi-agent system designed to streamline, track, score, and execute job & internship applications for **Janardhan Devarala** across India (Hyderabad, Bangalore, Remote). 
+
+Equipped with four specialized AI agents communicating via an async message bus, the system monitors job postings hourly, predicts ATS match pass probability, generates custom tailored ATS resumes & cover letters, executes applications, and sends real-time updates to mobile devices.
+
+---
+
+## 🧠 Multi-Agent Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        CareerPilot System                        │
-│                                                                  │
-│   User / CLI                                                     │
-│       │                                                          │
-│       ▼                                                          │
-│  ┌────────────┐    TASK     ┌────────────┐   EVENT   ┌────────┐  │
-│  │ 🧠Commander│ ─────────► │ 📡 Tracker │ ────────► │  DB   │  │
-│  │            │ ◄────────  │            │            │SQLite │  │
-│  │ Orchestrate│  RESULT     │ Discover   │            └────────┘  │
-│  │ Decompose  │             │ Deduplicate│                         │
-│  │ Aggregate  │    TASK     │ Persist    │                         │
-│  │            │ ─────────► ├────────────┤                         │
-│  └────────────┘            │ 🔮Predictor│                         │
-│        ▲       ◄────────   │            │                         │
-│        │        RESULT     │ Score Jobs │                         │
-│        │                   │ Predict    │                         │
-│     Async                  │ Report     │                         │
-│   Message Bus              └────────────┘                         │
-│  (pub/sub)                                                        │
-│                       ── Tool Registry ──                         │
-│  linkedin_tool │ email_tool │ job_board_tool │ resume_tool │ …   │
-└──────────────────────────────────────────────────────────────────┘
+                               ┌───────────────────────────┐
+                               │     COMMANDER AGENT       │
+                               │  (Workflow Orchestrator)  │
+                               └─────────────┬─────────────┘
+                                             │
+                      ┌──────────────────────┼──────────────────────┐
+                      ▼                      ▼                      ▼
+           ┌─────────────────────┐┌─────────────────────┐┌─────────────────────┐
+           │    TRACKER AGENT    ││   PREDICTOR AGENT   ││    APPLIER AGENT    │
+           │ (Hourly Job Scanner)││(ATS Score Predictor)││(1-Click Fast Apply) │
+           └─────────────────────┘└─────────────────────┘└─────────────────────┘
 ```
 
-### The Three Agents
-
-| Agent | Role | Key Capabilities |
+| Agent | Icon | Role & Description |
 |---|---|---|
-| 🧠 **Commander** | Orchestrator | LLM goal decomposition, task delegation, result aggregation |
-| 📡 **Tracker** | Data Manager | Job discovery, deduplication, DB persistence, profile sync, application lifecycle |
-| 🔮 **Predictor** | Intelligence | ATS fit scoring, response probability, ranking, weekly reports, skill gap analysis |
-
-### Communication Protocol
-
-All agents talk through an **async priority message bus** using typed `AgentMessage` envelopes:
-
-```
-topic:   jobs | profiles | predictions | commands | events
-type:    TASK | RESULT | EVENT | QUERY | ERROR
-priority: HIGH | NORMAL | LOW
-```
+| **Tracker Agent** | 🔍 | Scans LinkedIn Jobs, Naukri India, Indeed, and company career pages hourly for Data Analyst, Python Developer, and Financial Analyst roles in Hyderabad, Bangalore & Remote India. |
+| **Predictor Agent** | 🔮 | Analyzes job descriptions, extracts ATS keywords, matches candidate skills (Python, SQL, Pandas, FastAPI, AI Agents), and predicts ATS Pass Probability. |
+| **Commander Agent** | 🎯 | Orchestrates workflow execution, triggers search goals, enforces minimum fit score thresholds, and logs pipeline state. |
+| **Applier Agent** | ⚡ | Generates tailored ATS resumes & cover letters, executes 1-click applications, builds recruiter outreach packages (Email, LinkedIn Note, Call Script), and sends mobile alerts. |
 
 ---
 
-## Quickstart
+## 👤 Candidate Profile — Janardhan Devarala
 
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/you/careerPilot.git
-cd careerPilot
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-
-# Install (with dev tools)
-pip install -e ".[dev]"
-```
-
-### 2. Configure
-
-```bash
-cp .env.example .env
-# Edit .env — add your OpenAI key (or leave blank for Ollama)
-```
-
-Key variables:
-
-| Variable | Description |
-|---|---|
-| `OPENAI_API_KEY` | Your OpenAI key. Leave blank to use local Ollama. |
-| `TARGET_ROLES` | Comma-separated job titles to track |
-| `TARGET_LOCATIONS` | Comma-separated locations (or `Remote`) |
-| `LINKEDIN_EMAIL` | LinkedIn credentials (optional) |
-| `GMAIL_CREDENTIALS_PATH` | Path to Google Cloud credentials.json (optional) |
-
-### 3. Run the Demo
-
-```bash
-careerpilot start --demo
-```
-
-This runs a full end-to-end demo with mock data — no API keys required.
-
-### 4. Interactive Mode
-
-```bash
-careerpilot start
-# careerpilot> Find 10 Machine Learning jobs in Remote and Bangalore
-# careerpilot> Score all jobs and show my top recommendations
-# careerpilot> Sync my LinkedIn profile and email inbox
-# careerpilot> status
-# careerpilot> quit
-```
+- **Full Name:** Janardhan Devarala
+- **Location:** Podalakur, Andhra Pradesh, India *(Targeting Hyderabad, Bangalore, Remote India)*
+- **Emails:** `janardhand2021@gmail.com` / `devaralajanardhan@gmail.com`
+- **Phones:** `+91 70934 35561` / `+91 92042 65330`
+- **Links:**
+  - 🐙 **GitHub:** [https://github.com/janardhan-d](https://github.com/janardhan-d)
+  - 💼 **LinkedIn:** [https://www.linkedin.com/in/janardhan-devarala-1552172a1](https://www.linkedin.com/in/janardhan-devarala-1552172a1)
+  - 🌐 **Portfolio:** [https://janardhan-devarala-portfolio.netlify.app](https://janardhan-devarala-portfolio.netlify.app)
+- **Core Skills:** Python, SQL, Pandas, Matplotlib, Tkinter GUI, SQLite, MongoDB, React, Data Analysis, FastAPI, AI Agent Systems
+- **Certifications & Badges:**
+  - APSCHE + CSC India Internship *(Data Structures & Algorithms in Python)*
+  - InnoByte Services Internship *(Python Developer)*
+  - Google Cloud Badges *(Responsible AI, Generative AI, LLMs)*
+  - Microsoft Learn Badges *(Generative AI, Cloud Computing, Big Data)*
+- **Hackathon Honors:** CodeSprint-2026, Smart India Hackathon Finalist, NRCM Hackathon Finalist, SVC Hackathon Top 5
 
 ---
 
-## CLI Commands
-
-```bash
-careerpilot start             # Launch all agents (REPL)
-careerpilot start --demo      # Run the demo flow
-careerpilot start --goal "Apply to 5 AI roles"   # Single goal
-
-careerpilot status            # Rich table: jobs + applications
-careerpilot report            # Weekly prediction report
-
-careerpilot apply \
-  --job-url "https://linkedin.com/jobs/view/123" \
-  --resume ./resume.pdf       # Track & score a specific job
-
-careerpilot config            # Show current configuration
-```
-
----
-
-## Project Structure
+## 📂 Repository Structure
 
 ```
 careerPilot/
+├── config.yaml              # API Keys, India Location Filters & Scheduling
+├── run_server.py            # Uvicorn FastAPI Server Launcher
+├── main.py                  # CLI & Core System Entrypoint
 ├── agents/
-│   ├── base_agent.py          # Abstract BaseAgent (lifecycle, memory, LLM, tools)
-│   ├── commander.py           # 🧠 Orchestrator
-│   ├── tracker.py             # 📡 Data manager
-│   └── predictor.py           # 🔮 Intelligence layer
-├── core/
-│   ├── config.py              # Pydantic Settings (env-based)
-│   ├── message_bus.py         # Async priority pub/sub bus
-│   ├── tool_registry.py       # Shared tool discovery & invocation
-│   └── memory.py              # TTL working memory + SQLite long-term
-├── tools/
-│   ├── job_board_tool.py      # LinkedIn + Indeed scrapers
-│   ├── linkedin_tool.py       # LinkedIn profile read/write
-│   ├── email_tool.py          # Gmail search, send, parse
-│   ├── resume_tool.py         # PDF/DOCX parsing + ATS scoring
-│   └── calendar_tool.py       # Google Calendar interview scheduling
+│   ├── base_agent.py        # Base Agent Lifecycle & MessageBus Handler
+│   ├── commander.py         # Workflow Commander Agent
+│   ├── tracker.py           # Hourly Job Tracker Agent
+│   ├── predictor.py         # ATS Match Predictor Agent
+│   └── applier.py           # Fast 1-Click Applier & Outreach Agent
+├── api/
+│   ├── server.py            # REST API & WebSocket Event Stream
+│   └── dashboard.py         # Glassmorphism HTML Frontend UI
 ├── models/
-│   ├── schemas.py             # Pydantic v2 domain models
-│   └── database.py            # SQLAlchemy 2 async ORM
-├── orchestration/
-│   └── pipeline.py            # Main entrypoint
-├── cli/
-│   └── main.py                # Typer + Rich CLI
-├── tests/
-│   ├── conftest.py
-│   ├── test_agents/
-│   └── test_tools/
-├── .env.example
-├── pyproject.toml
-└── Makefile
+│   ├── database.py          # SQLAlchemy 2.0 Async ORM Schemas
+│   └── schemas.py           # Pydantic Schemas & Agent Message Envelopes
+├── utils/
+│   ├── resume_builder.py    # ATS Resume & Cover Letter Generator
+│   ├── notifier.py          # Mobile / WhatsApp Notification Utility
+│   └── __init__.py
+└── tools/
+    ├── job_board_tool.py    # LinkedIn & Indeed Scrapers
+    ├── linkedin_tool.py     # LinkedIn Profile Integration
+    └── email_tool.py        # Gmail & Recruiter Email Scraper
 ```
 
 ---
 
-## Development
+## 🚀 Quick Start & Local Execution
 
-```bash
-make dev          # Install with dev dependencies
-make lint         # ruff check
-make fmt          # ruff format
-make typecheck    # mypy
-make test         # pytest with coverage
-make run          # python -m orchestration.pipeline
+### 1. Installation
+```powershell
+# Clone the repository
+git clone https://github.com/janardhan-d/careerPilot.git
+cd careerPilot
+
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
+
+### 2. Start API Server & Dashboard
+```powershell
+python run_server.py
+```
+Open **`http://localhost:8000`** in your browser to view the live multi-agent dashboard.
 
 ---
 
-## Scoring Model
-
-The **Predictor** scores each job entirely offline (no LLM needed):
-
-```
-fit_score (0–100) =
-    60%  Skill overlap   (your resume skills ∩ JD skills / JD skills)
-  + 25%  Title match     (token overlap with your target roles)
-  + 15%  Location match  (remote = full 15, on-site = 8)
-
-response_probability (0–1) =
-    base_prob (fit_score bucket) + easy_apply_bonus + company_tier_bonus
-```
-
-**Thresholds** (configurable via `MIN_FIT_SCORE` env var):
-
-| Score | Recommendation |
-|---|---|
-| ≥ 65 | ✅ APPLY |
-| 45–64 | 🔍 REVIEW |
-| < 45 | ❌ SKIP |
-
----
-
-## Extending CareerPilot
-
-### Adding a New Tool
-
-```python
-# tools/my_tool.py
-from core.tool_registry import registry
-
-@registry.tool(
-    name="my_tool",
-    description="Does something useful",
-    tags=["custom"],
-)
-async def my_tool(param: str) -> dict:
-    return {"result": param}
-```
-
-Then import it in `tools/__init__.py` and it's instantly available to all agents.
-
-### Adding a New Agent
-
-```python
-# agents/my_agent.py
-from agents.base_agent import BaseAgent
-from models.schemas import AgentMessage
-
-class MyAgent(BaseAgent):
-    agent_id = "my_agent"
-    subscribed_topics = ["jobs"]
-
-    async def handle_message(self, message: AgentMessage) -> None:
-        result = await self.use_tool("search_jobs", query="AI Engineer")
-        self.remember("last_search", result)
-        await self.emit_event("events", {"type": "custom_event"})
-```
-
----
-
-## Roadmap
-
-- [ ] Playwright-based auto-apply (form filling)
-- [ ] Naukri.com scraper
-- [ ] Resume auto-tailoring via LLM
-- [ ] Telegram / WhatsApp bot interface
-- [ ] Redis message bus (production upgrade)
-- [ ] Cover letter generator
-- [ ] Interview prep Q&A (RAG over JD + your resume)
-
----
-
-## License
-
-MIT © CareerPilot Contributors
+## 📄 License
+MIT License © 2026 Janardhan Devarala

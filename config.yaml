@@ -1,0 +1,76 @@
+# ==============================================================================
+# Smart AI Job Application System — Configuration
+# Candidate: Janardhan Devarala
+# ==============================================================================
+
+user_profile:
+  name: "Janardhan Devarala"
+  location: "Podalakur, Andhra Pradesh, India"
+  target_locations:
+    - "Hyderabad"
+    - "Bangalore"
+    - "Remote India"
+    - "India"
+  primary_emails:
+    - "janardhand2021@gmail.com"
+    - "devaralajanardhan@gmail.com"
+  phones:
+    - "+91 70934 35561"
+    - "+91 92042 65330"
+  links:
+    github: "https://github.com/janardhan-d"
+    linkedin: "https://www.linkedin.com/in/janardhan-devarala-1552172a1"
+    portfolio: "https://janardhan-devarala-portfolio.netlify.app"
+  target_roles:
+    - "Data Analyst"
+    - "Python Developer"
+    - "Financial Analyst"
+    - "AI Engineer"
+    - "Software Developer"
+
+skills:
+  core:
+    - "Python"
+    - "SQL"
+    - "Pandas"
+    - "Matplotlib"
+    - "Tkinter GUI"
+    - "SQLite"
+    - "MongoDB"
+    - "React"
+    - "Data Analysis"
+    - "FastAPI"
+    - "AI Agent Systems"
+  certifications:
+    - "APSCHE + CSC India Internship (Data Structures & Algorithms in Python)"
+    - "InnoByte Services Internship (Python Developer)"
+    - "Google Cloud Badges (Responsible AI, Generative AI, LLMs)"
+    - "Microsoft Learn Badges (Generative AI, Cloud Computing, Big Data)"
+  hackathons:
+    - "CodeSprint-2026"
+    - "Smart India Hackathon Finalist"
+    - "NRCM Hackathon Finalist"
+    - "SVC Hackathon Top 5"
+
+scheduling:
+  interval_hours: 1
+  auto_apply_min_fit_score: 75.0
+
+integrations:
+  linkedin_api:
+    enabled: true
+    username: "${LINKEDIN_USERNAME}"
+    password: "${LINKEDIN_PASSWORD}"
+  gmail_api:
+    enabled: true
+    credentials_json: "gmail_credentials.json"
+    token_json: "gmail_token.json"
+  naukri_api:
+    enabled: true
+    api_key: "${NAUKRI_API_KEY}"
+  twilio_mobile_notifier:
+    enabled: true
+    account_sid: "${TWILIO_ACCOUNT_SID}"
+    auth_token: "${TWILIO_AUTH_TOKEN}"
+    from_whatsapp: "whatsapp:+14155238886"
+    to_whatsapp: "whatsapp:+917093435561"
