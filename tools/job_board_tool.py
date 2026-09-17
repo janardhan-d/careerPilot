@@ -192,18 +192,23 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
     ]
     skills_pool = [
         "Python", "PyTorch", "TensorFlow", "LLMs", "MLOps",
-        "Kubernetes", "FastAPI", "SQL", "Spark", "dbt",
+        "Kubernetes", "FastAPI", "SQL", "Spark", "React",
     ]
     jobs = []
+    is_intern = "intern" in query.lower()
+    clean_query = query.replace("Internship", "").replace("internship", "").replace("Intern", "").replace("intern", "").strip() or "Software Engineer"
+
     for i in range(n):
         company = random.choice(companies)
         skills = random.sample(skills_pool, k=random.randint(3, 6))
+        title = f"{clean_query} Intern" if is_intern else f"{clean_query} — Level {i + 1}"
+        
         jobs.append(
             JobPosting(
-                title=f"{query} — Level {i + 1}",
+                title=title,
                 company=company,
                 location=location,
-                description=f"We are looking for an experienced {query} to join our team.",
+                description=f"We are looking for an ambitious {title} to join our engineering & AI teams.",
                 skills_mentioned=skills,
                 source=JobSource.LINKEDIN,
                 source_url=f"https://linkedin.com/jobs/view/{random.randint(10**7, 10**8)}",
@@ -212,6 +217,7 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
             )
         )
     return jobs
+
 
 
 # ── Registered Tools ──────────────────────────────────────────────────────────
