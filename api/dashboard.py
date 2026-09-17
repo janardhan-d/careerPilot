@@ -2,11 +2,11 @@
 CareerPilot — Advanced Glassmorphic Dashboard Frontend
 ======================================================
 Features:
+- Candidate Portfolio, Social Profiles & Connected Tools Hub
 - 100% Toast Notifications (No native browser alerts)
 - Interactive Outreach Kit Modal with tabbed preview & individual copy buttons
 - Autonomous Auto-Apply Mode Toggle Switcher
 - Cover Letter & Resume ATS Match Visualizer
-- Profile AI Optimizer & Goal Dispatcher
 """
 
 DASHBOARD_HTML = r"""<!DOCTYPE html>
@@ -68,7 +68,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .agent-info p { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
 
   /* ── Grid Layouts ── */
-  .grid-profile { display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 2rem; }
+  .grid-profile { display: grid; grid-template-columns: 1.1fr 1.9fr; gap: 1.5rem; margin-bottom: 2rem; }
   @media(max-width: 1024px) { .grid-profile, .fleet-bar { grid-template-columns: 1fr; } }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
@@ -90,6 +90,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .presets-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
   .preset-chip { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .preset-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── Tool Badges Grid ── */
+  .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 1rem; }
+  .tool-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; }
+  .tool-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--green); background: rgba(46,213,115,0.12); padding: 2px 8px; border-radius: 10px; }
 
   /* ── Tabs & Search ── */
   .tab-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -203,10 +208,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <!-- Goal & Profile Grid -->
   <div class="grid-profile">
     
-    <!-- Profile Editor Card -->
+    <!-- Profile & Portfolio Editor Card -->
     <div class="card">
       <div class="card-title">
-        <span>👤 Candidate Profile & Contact Details</span>
+        <span>👤 Candidate Profile & Portfolio Hub</span>
         <div style="display:flex;gap:6px">
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;background:linear-gradient(135deg,var(--accent2),#00a8ff);color:#051b2c;font-weight:800" onclick="optimizeProfile()">✨ AI Optimizer</button>
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="saveProfile()">Save</button>
@@ -222,6 +227,18 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <label>Phone Number (Recruiter Pitch)</label>
         <input type="text" id="prof-phone" class="input-field" value="+91 9876543210"/>
 
+        <label>GitHub Profile / Repo</label>
+        <input type="text" id="prof-github" class="input-field" value="https://github.com/janardhan-d"/>
+
+        <label>LinkedIn Profile URL</label>
+        <input type="text" id="prof-linkedin" class="input-field" value="https://linkedin.com/in/janardhan-devarala"/>
+
+        <label>Personal Portfolio Site</label>
+        <input type="text" id="prof-portfolio" class="input-field" value="https://janardhan-d.github.io"/>
+
+        <label>Google Drive Master Resume Link</label>
+        <input type="text" id="prof-gdrive" class="input-field" value="https://drive.google.com/file/d/janardhan-devarala-master-resume"/>
+
         <label>Target Roles</label>
         <input type="text" id="prof-roles" class="input-field" value="Data Analyst, Python Developer, Financial Analyst, AI Engineer"/>
 
@@ -235,25 +252,65 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       </form>
     </div>
 
-    <!-- Goal Submission & Quick Actions -->
-    <div class="card">
-      <div class="card-title">⚡ Agent Goal Dispatcher</div>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">
-        Instruct the Commander Agent to hunt, score, and queue applications for specific roles & locations.
-      </p>
+    <!-- Right Column: Goal Dispatcher & Agent Tools Hub -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      
+      <!-- Goal Dispatcher Card -->
+      <div class="card">
+        <div class="card-title">⚡ Agent Goal Dispatcher</div>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">
+          Instruct the Commander Agent to hunt, score, and queue applications for specific roles & locations.
+        </p>
 
-      <div style="display:flex;gap:10px;margin-bottom:1rem">
-        <input type="text" id="goal-input" class="input-field" placeholder="e.g. Find 20 Machine Learning internships in Bangalore and score fit" style="flex:1"/>
-        <button class="btn" onclick="dispatchGoal()">Run Goal</button>
+        <div style="display:flex;gap:10px;margin-bottom:1rem">
+          <input type="text" id="goal-input" class="input-field" placeholder="e.g. Find 20 Machine Learning internships in Bangalore and score fit" style="flex:1"/>
+          <button class="btn" onclick="dispatchGoal()">Run Goal</button>
+        </div>
+
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-dim)">QUICK PRESETS:</div>
+        <div class="presets-bar">
+          <div class="preset-chip" onclick="setGoal('Find 20 Data Analyst and Python Developer jobs in Hyderabad')">📍 Hyderabad Roles</div>
+          <div class="preset-chip" onclick="setGoal('Find 15 AI Engineer Remote Jobs with high fit score')">🌐 Remote AI Jobs</div>
+          <div class="preset-chip" onclick="setGoal('Find 20 Data Scientist & Machine Learning Jobs in Bangalore')">📍 Bangalore Data Roles</div>
+          <div class="preset-chip" onclick="setGoal('Match candidate skills against all 36 tracked jobs')">⚡ Rescore All Jobs</div>
+        </div>
       </div>
 
-      <div style="font-size:0.78rem;font-weight:700;color:var(--text-dim)">QUICK PRESETS:</div>
-      <div class="presets-bar">
-        <div class="preset-chip" onclick="setGoal('Find 20 Data Analyst and Python Developer jobs in Hyderabad')">📍 Hyderabad Roles</div>
-        <div class="preset-chip" onclick="setGoal('Find 15 AI Engineer Remote Jobs with high fit score')">🌐 Remote AI Jobs</div>
-        <div class="preset-chip" onclick="setGoal('Find 20 Data Scientist & Machine Learning Jobs in Bangalore')">📍 Bangalore Data Roles</div>
-        <div class="preset-chip" onclick="setGoal('Match candidate skills against all 36 tracked jobs')">⚡ Rescore All Jobs</div>
+      <!-- Agent Toolkit & Connected Accounts Card -->
+      <div class="card">
+        <div class="card-title">🛠️ Connected Agent Toolkit & Integration Status</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.75rem">
+          Active tools accessible by Tracker, Predictor, Commander, and Applier agents:
+        </p>
+
+        <div class="tools-grid">
+          <div class="tool-item">
+            <span>💼 LinkedIn Scraper & Sync</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>✉️ Gmail / Email Outreach</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>📄 ATS Resume & Cover Generator</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>📅 Google Calendar Scheduler</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>💬 Twilio WhatsApp & SMS Alerts</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>📂 Google Drive Resume Storage</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -318,7 +375,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
     <div id="obox-email" class="cover-box">Loading cold email pitch...</div>
     <div id="obox-linkedin" class="cover-box" style="display:none">Loading LinkedIn note...</div>
-    <div id="obox-phone" class="cover-box" style="display:none">Loading phone call script...</div>
+    <div id="obox-phone" class="cover-box" style="display:none">Loading call script & recruiter contact info...</div>
 
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:0.75rem;color:var(--text-dim)">✨ Complete package ready for recruiter outreach</span>
@@ -375,6 +432,10 @@ async function loadProfile() {
     if(p.full_name) document.getElementById('prof-name').value = p.full_name;
     if(p.email) document.getElementById('prof-email').value = p.email;
     if(p.phone) document.getElementById('prof-phone').value = p.phone;
+    if(p.github_url) document.getElementById('prof-github').value = p.github_url;
+    if(p.linkedin_url) document.getElementById('prof-linkedin').value = p.linkedin_url;
+    if(p.portfolio_url) document.getElementById('prof-portfolio').value = p.portfolio_url;
+    if(p.gdrive_resume_url) document.getElementById('prof-gdrive').value = p.gdrive_resume_url;
     if(p.target_roles) document.getElementById('prof-roles').value = p.target_roles.join(', ');
     if(p.skills) document.getElementById('prof-skills').value = p.skills.join(', ');
   } catch(e) {}
@@ -385,6 +446,10 @@ async function saveProfile() {
     full_name: document.getElementById('prof-name').value,
     email: document.getElementById('prof-email').value,
     phone: document.getElementById('prof-phone').value,
+    github_url: document.getElementById('prof-github').value,
+    linkedin_url: document.getElementById('prof-linkedin').value,
+    portfolio_url: document.getElementById('prof-portfolio').value,
+    gdrive_resume_url: document.getElementById('prof-gdrive').value,
     target_roles: document.getElementById('prof-roles').value.split(',').map(s=>s.trim()).filter(Boolean),
     skills: document.getElementById('prof-skills').value.split(',').map(s=>s.trim()).filter(Boolean),
   };
@@ -393,7 +458,7 @@ async function saveProfile() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body)
   });
-  showToast("Candidate profile saved & updated across all agents!", "success");
+  showToast("Candidate profile & portfolio links updated across all agents!", "success");
 }
 
 async function optimizeProfile() {
@@ -401,7 +466,7 @@ async function optimizeProfile() {
   const res = await fetch('/api/profile/optimize', { method: 'POST' });
   const p = await res.json();
   loadProfile();
-  showToast("Profile optimized! ATS keywords and skills enhanced.", "success");
+  showToast("Profile optimized! ATS keywords, links and skills enhanced.", "success");
 }
 
 async function loadJobs() {

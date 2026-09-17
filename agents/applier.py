@@ -72,6 +72,10 @@ class ApplierAgent(BaseAgent):
                 "experience_level": profile.experience_level,
                 "prefer_internships": profile.prefer_internships,
                 "bio": profile.bio,
+                "portfolio_url": getattr(profile, "portfolio_url", "https://janardhan-d.github.io"),
+                "linkedin_url": getattr(profile, "linkedin_url", "https://linkedin.com/in/janardhan-devarala"),
+                "github_url": getattr(profile, "github_url", "https://github.com/janardhan-d"),
+                "gdrive_resume_url": getattr(profile, "gdrive_resume_url", "https://drive.google.com/file/d/janardhan-devarala-master-resume"),
                 "updated_at": profile.updated_at.isoformat() if profile.updated_at else None,
             }
 
@@ -102,6 +106,14 @@ class ApplierAgent(BaseAgent):
                 profile.prefer_internships = bool(data["prefer_internships"])
             if "bio" in data:
                 profile.bio = data["bio"]
+            if "portfolio_url" in data:
+                setattr(profile, "portfolio_url", data["portfolio_url"])
+            if "linkedin_url" in data:
+                setattr(profile, "linkedin_url", data["linkedin_url"])
+            if "github_url" in data:
+                setattr(profile, "github_url", data["github_url"])
+            if "gdrive_resume_url" in data:
+                setattr(profile, "gdrive_resume_url", data["gdrive_resume_url"])
 
             profile.updated_at = datetime.now(timezone.utc)
             await session.commit()

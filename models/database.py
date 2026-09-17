@@ -108,15 +108,19 @@ class UserProfileORM(Base):
     __tablename__ = "user_profiles"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default="default")
-    full_name: Mapped[str] = mapped_column(String(128), default="Developer Candidate")
-    email: Mapped[str] = mapped_column(String(128), default="candidate@example.com")
+    full_name: Mapped[str] = mapped_column(String(128), default="Janardhan Devarala")
+    email: Mapped[str] = mapped_column(String(128), default="devaralajanardhan@gmail.com")
     phone: Mapped[str] = mapped_column(String(32), default="+91 9876543210")
-    location: Mapped[str] = mapped_column(String(128), default="Bangalore, India")
-    target_roles: Mapped[list] = mapped_column(JSON, default=lambda: ["AI Engineer", "Software Engineer", "Data Scientist", "Full Stack Developer"])
-    skills: Mapped[list] = mapped_column(JSON, default=lambda: ["Python", "FastAPI", "React", "Machine Learning", "SQL", "Docker", "Git", "AI Agent System"])
+    location: Mapped[str] = mapped_column(String(128), default="Hyderabad / Bengaluru, India")
+    target_roles: Mapped[list] = mapped_column(JSON, default=lambda: ["Data Analyst", "Python Developer", "Financial Analyst", "AI Engineer"])
+    skills: Mapped[list] = mapped_column(JSON, default=lambda: ["Python", "SQL", "Data Analysis", "Machine Learning", "PowerBI", "Scikit-learn", "Financial Analysis", "Pandas", "NumPy", "FastAPI", "Docker", "Git"])
     experience_level: Mapped[str] = mapped_column(String(32), default="ENTRY_LEVEL")
     prefer_internships: Mapped[bool] = mapped_column(Boolean, default=True)
-    bio: Mapped[str] = mapped_column(Text, default="Passionate developer experienced in Python, AI systems, and full-stack web applications.")
+    bio: Mapped[str] = mapped_column(Text, default="Passionate AI & Data Analyst engineer experienced in Python, ML models, financial analysis, and full-stack automation.")
+    portfolio_url: Mapped[str] = mapped_column(String(256), default="https://janardhan-d.github.io")
+    linkedin_url: Mapped[str] = mapped_column(String(256), default="https://linkedin.com/in/janardhan-devarala")
+    github_url: Mapped[str] = mapped_column(String(256), default="https://github.com/janardhan-d")
+    gdrive_resume_url: Mapped[str] = mapped_column(String(256), default="https://drive.google.com/file/d/janardhan-devarala-master-resume")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
