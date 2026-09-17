@@ -49,7 +49,7 @@ class ApplierAgent(BaseAgent):
     async def handle_message(self, message: AgentMessage) -> None:
         """Handle incoming message bus events."""
         if message.type == MessageType.EVENT:
-            logger.info("applier.event_received", event=message.payload.get("event"))
+            logger.info("applier.event_received", event_name=message.payload.get("event"))
 
 
     async def get_profile(self) -> dict[str, Any]:
