@@ -664,6 +664,11 @@ function renderJobs(jobs) {
     const srcTag = j.source || 'LINKEDIN';
     const ageTag = j.posted_age_str || 'Released Today';
 
+    let targetUrl = j.source_url || '';
+    if (!targetUrl || targetUrl.includes('/jobs/view/data-analyst-') || targetUrl.includes('/jobs/view/ai-intern-') || targetUrl.includes('/jobs/view/python-developer-') || targetUrl.includes('/jobs/view/financial-analyst-') || targetUrl.includes('/jobs/view/ml-engineer-') || targetUrl === '#') {
+      targetUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(j.title + ' ' + j.company)}&location=${encodeURIComponent(j.location || 'India')}`;
+    }
+
     return `
       <div class="job-card">
         <div>
@@ -687,7 +692,7 @@ function renderJobs(jobs) {
           </div>
         </div>
         <div class="job-footer">
-          <a class="source-link" href="${j.source_url || '#'}" target="_blank">🔗 Details</a>
+          <a class="source-link" href="${targetUrl}" target="_blank" rel="noopener noreferrer">🔗 Details</a>
           <button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;" onclick="openOutreachModal('${j.id}')">📬 Outreach Kit</button>
           ${isApplied ? 
             `<button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;cursor:default" disabled>✅ Applied</button>` :

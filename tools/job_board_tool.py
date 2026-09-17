@@ -203,6 +203,9 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
         skills = random.sample(skills_pool, k=random.randint(3, 6))
         title = f"{clean_query} Intern" if is_intern else f"{clean_query} — Level {i + 1}"
         
+        encoded_query = clean_query.replace(" ", "%20")
+        encoded_company = company.replace(" ", "%20")
+        encoded_loc = location.replace(" ", "%20")
         jobs.append(
             JobPosting(
                 title=title,
@@ -211,7 +214,7 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
                 description=f"We are looking for an ambitious {title} to join our engineering & AI teams.",
                 skills_mentioned=skills,
                 source=JobSource.LINKEDIN,
-                source_url=f"https://linkedin.com/jobs/view/{random.randint(10**7, 10**8)}",
+                source_url=f"https://www.linkedin.com/jobs/search/?keywords={encoded_query}%20{encoded_company}&location={encoded_loc}",
                 is_remote="remote" in location.lower(),
                 easy_apply=random.choice([True, False]),
             )
