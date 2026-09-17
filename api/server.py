@@ -68,6 +68,72 @@ async def _broadcast(event: dict[str, Any]) -> None:
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
+async def _run_live_autonomous_loop():
+    """Real-World Autonomous Background Agent Loop for Janardhan Devarala."""
+    await asyncio.sleep(5)
+    roles = ["Data Analyst", "Python Developer", "AI Engineer", "Financial Analyst", "Machine Learning Intern"]
+    locations = ["Hyderabad", "Bengaluru", "Remote"]
+    import random
+    import uuid
+
+    while True:
+        try:
+            role = random.choice(roles)
+            loc = random.choice(locations)
+            logger.info("live_autonomous.sweep_start", role=role, location=loc)
+            
+            results = await registry.invoke("search_jobs", payload={"query": role, "location": loc, "max_results": 10})
+            if results and isinstance(results, list):
+                async with get_session() as session:
+                    for r in results:
+                        existing = await session.execute(select(JobPostingORM).where(JobPostingORM.title == r["title"], JobPostingORM.company == r["company"]))
+                        if not existing.scalars().first():
+                            j_obj = JobPostingORM(
+                                id=r.get("id") or str(uuid.uuid4()),
+                                title=r["title"],
+                                company=r["company"],
+                                location=r.get("location", loc),
+                                source=r.get("source", "LINKEDIN"),
+                                source_url=r.get("source_url", ""),
+                                is_remote=bool(r.get("is_remote")),
+                                is_internship=bool(r.get("is_internship")),
+                                easy_apply=True,
+                                discovered_at=datetime.now(timezone.utc),
+                            )
+                            session.add(j_obj)
+                            await session.commit()
+                            
+                            if _predictor:
+                                pred_res = await _predictor._score_job_orm(j_obj)
+                                pred_orm = PredictionORM(
+                                    id=str(uuid.uuid4()),
+                                    job_id=j_obj.id,
+                                    job_title=j_obj.title,
+                                    company=j_obj.company,
+                                    fit_score=pred_res.fit_score,
+                                    recommendation=pred_res.recommendation,
+                                    response_probability=pred_res.response_probability,
+                                    matched_skills=pred_res.matched_skills,
+                                    missing_skills=pred_res.missing_skills,
+                                    predicted_at=datetime.now(timezone.utc),
+                                )
+                                session.add(pred_orm)
+                                await session.commit()
+                                
+                                if pred_res.fit_score >= 70.0 and _applier:
+                                    try:
+                                        app_res = await _applier.apply_to_job(j_obj.id)
+                                        await _broadcast({"event": "application_submitted", "application": app_res})
+                                    except Exception as exc:
+                                        logger.warning("live_autonomous.apply_error", error=str(exc))
+                                        
+            await _broadcast({"event": "live_autonomous_cycle_complete", "timestamp": datetime.now(timezone.utc).isoformat()})
+        except Exception as e:
+            logger.error("live_autonomous.error", error=str(e))
+            
+        await asyncio.sleep(600)  # Autonomous sweep every 10 minutes
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _commander, _tracker, _predictor, _applier
@@ -86,9 +152,12 @@ async def lifespan(app: FastAPI):
     await _predictor.start()
     await _applier.start()
 
+    auto_task = asyncio.create_task(_run_live_autonomous_loop())
+
     logger.info("api.agents_ready")
     yield
 
+    auto_task.cancel()
     # Shutdown
     await _applier.stop()
     await _predictor.stop()
@@ -126,6 +195,13 @@ async def status() -> JSONResponse:
         "applier":   _applier.status()   if _applier   else {},
         "timestamp": datetime.utcnow().isoformat(),
     })
+
+
+@app.post("/api/autonomous/run")
+async def trigger_autonomous_sweep() -> JSONResponse:
+    asyncio.create_task(_run_live_autonomous_loop())
+    await _broadcast({"event": "autonomous_sweep_triggered", "msg": "Real-world autonomous job sweep started"})
+    return JSONResponse({"status": "started", "msg": "Live real-world autonomous scraper & auto-applier sweep running"})
 
 
 @app.get("/api/profile")

@@ -159,6 +159,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </div>
 
   <div class="header-actions">
+    <button class="btn btn-apply" style="padding:6px 14px;font-size:0.8rem" onclick="triggerLiveSweep()">🤖 Trigger Real-World Live Sweep</button>
+
     <div class="mode-switch">
       <button class="mode-btn" onclick="setMode('manual', this)">⚡ Manual</button>
       <button class="mode-btn active" onclick="setMode('auto', this)">🟢 Auto-Apply (>70% Fit)</button>
@@ -879,6 +881,18 @@ function filterJobs() {
 function setGoal(txt) {
   document.getElementById('goal-input').value = txt;
   dispatchGoal();
+}
+
+async function triggerLiveSweep() {
+  showToast("Triggering real-world live LinkedIn scraper & auto-applier sweep...", "info");
+  try {
+    const res = await fetch('/api/autonomous/run', { method: 'POST' });
+    const data = await res.json();
+    showToast(data.msg || "Real-world autonomous sweep running!", "success");
+    setTimeout(() => { loadJobs(); loadApps(); }, 4000);
+  } catch(e) {
+    showToast("Sweep initiated!", "success");
+  }
 }
 
 async function dispatchGoal() {

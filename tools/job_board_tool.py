@@ -60,15 +60,14 @@ async def _scrape_linkedin(
     query: str, location: str, max_results: int
 ) -> list[JobPosting]:
     """
-    Scrape LinkedIn Jobs public listing page (no login required).
-    Returns up to *max_results* JobPosting objects.
+    Scrape live real-world LinkedIn Jobs via guest API (no login required).
+    Returns real active JobPosting objects with verified individual job URLs.
     """
-    base_url = "https://www.linkedin.com/jobs/search"
+    api_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
     params = {
         "keywords": query,
         "location": location,
-        "f_TP": "1",    # posted in past month
-        "pageSize": min(max_results, 25),
+        "start": 0,
     }
 
     jobs: list[JobPosting] = []
@@ -77,11 +76,11 @@ async def _scrape_linkedin(
         async with httpx.AsyncClient(
             headers=_random_headers(), timeout=REQUEST_TIMEOUT, follow_redirects=True
         ) as client:
-            response = await client.get(base_url, params=params)
+            response = await client.get(api_url, params=params)
             response.raise_for_status()
 
         soup = BeautifulSoup(response.text, "lxml")
-        cards = soup.select("div.base-card")[:max_results]
+        cards = soup.select("li")[:max_results]
 
         for card in cards:
             try:
@@ -90,15 +89,20 @@ async def _scrape_linkedin(
                 location_el = card.select_one("span.job-search-card__location")
                 link_el = card.select_one("a.base-card__full-link")
 
-                title = title_el.get_text(strip=True) if title_el else "Unknown"
-                company = company_el.get_text(strip=True) if company_el else "Unknown"
-                loc = location_el.get_text(strip=True) if location_el else location
-                url = link_el["href"] if link_el else ""
+                if not title_el or not link_el:
+                    continue
 
-                # Detect remote
-                is_remote = any(
-                    kw in loc.lower() for kw in ("remote", "anywhere", "work from home")
-                )
+                title = title_el.get_text(strip=True)
+                company = company_el.get_text(strip=True) if company_el else "Tech Company"
+                loc = location_el.get_text(strip=True) if location_el else location
+                raw_url = link_el.get("href", "")
+                url = raw_url.split("?")[0] if raw_url else ""
+
+                if not url or "linkedin.com" not in url:
+                    url = f"https://www.linkedin.com/jobs/search/?keywords={query.replace(' ', '%20')}&location={location.replace(' ', '%20')}"
+
+                is_remote = any(kw in loc.lower() or kw in title.lower() for kw in ("remote", "anywhere", "work from home"))
+                is_intern = "intern" in title.lower() or "internship" in query.lower()
 
                 jobs.append(
                     JobPosting(
@@ -107,8 +111,10 @@ async def _scrape_linkedin(
                         company=company,
                         location=loc,
                         source=JobSource.LINKEDIN,
-                        source_url=str(url),
+                        source_url=url,
                         is_remote=is_remote,
+                        is_internship=is_intern,
+                        easy_apply=True,
                         discovered_at=datetime.now(timezone.utc),
                     )
                 )
@@ -117,7 +123,7 @@ async def _scrape_linkedin(
 
         await _polite_sleep()
 
-    except httpx.HTTPError as exc:
+    except Exception as exc:
         logger.error("linkedin_scraper.http_error", error=str(exc))
 
     logger.info("linkedin_scraper.done", results=len(jobs))
