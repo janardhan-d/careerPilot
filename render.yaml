@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: careerpilot
+    env: python
+    buildCommand: pip install fastapi "uvicorn[standard]" websockets pydantic pydantic-settings sqlalchemy aiosqlite httpx beautifulsoup4 lxml structlog cachetools tenacity python-dotenv rich python-dateutil
+    startCommand: uvicorn api.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/status
+    envVars:
+      - key: PYTHONIOENCODING
+        value: utf-8
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./careerpilot.db
+      - key: LOG_LEVEL
+        value: INFO
+      - key: TARGET_ROLES
+        value: Machine Learning Engineer,AI Engineer,Data Scientist
+      - key: TARGET_LOCATIONS
+        value: Remote,Bangalore

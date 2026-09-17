@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  careerpilot:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./careerpilot.db:/app/careerpilot.db
+      - ./.env:/app/.env
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
