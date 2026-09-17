@@ -105,13 +105,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .job-skills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 1rem; }
   .job-skill-chip { font-size: 0.72rem; background: var(--surface2); color: var(--text-dim); padding: 3px 8px; border-radius: 6px; }
 
-  .job-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.9rem; margin-top: 0.5rem; }
+  .job-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.9rem; margin-top: 0.5rem; gap: 6px; flex-wrap: wrap; }
   .source-link { font-size: 0.75rem; color: var(--text-dim); text-decoration: none; }
   .source-link:hover { color: var(--accent2); }
 
   /* ── Modal ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1.5rem; }
-  .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 650px; max-height: 85vh; overflow-y: auto; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1.5rem; }
+  .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
   .modal-title { font-size: 1.2rem; font-weight: 800; color: var(--text); }
   .modal-close { font-size: 1.5rem; color: var(--text-dim); cursor: pointer; border: none; background: none; }
@@ -165,7 +165,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       <div class="agent-avatar">⚡</div>
       <div class="agent-info">
         <h4>Applier Agent</h4>
-        <p id="st-applier">1-Click Fast Auto-Apply</p>
+        <p id="st-applier">LinkedIn, Mail & Call Outreach</p>
       </div>
     </div>
   </div>
@@ -176,15 +176,21 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <!-- Profile Editor Card -->
     <div class="card">
       <div class="card-title">
-        <span>👤 Candidate Profile & Skills</span>
-        <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="saveProfile()">Save Profile</button>
+        <span>👤 Candidate Profile & Contact Details</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;background:linear-gradient(135deg,var(--accent2),#00a8ff);color:#051b2c;font-weight:800" onclick="optimizeProfile()">✨ AI Optimizer</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="saveProfile()">Save</button>
+        </div>
       </div>
       <form class="profile-form" onsubmit="event.preventDefault(); saveProfile();">
         <label>Full Name</label>
         <input type="text" id="prof-name" class="input-field" value="Developer Candidate"/>
         
-        <label>Email & Contact</label>
+        <label>Contact Email (Direct Outreach)</label>
         <input type="email" id="prof-email" class="input-field" value="candidate@example.com"/>
+
+        <label>Phone Number (Recruiter Pitch)</label>
+        <input type="text" id="prof-phone" class="input-field" value="+91 9876543210"/>
 
         <label>Target Roles</label>
         <input type="text" id="prof-roles" class="input-field" value="AI Engineer, Data Scientist, Full Stack Developer"/>
@@ -255,7 +261,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <div class="modal-content">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Application Submitted!</div>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <button class="modal-close" onclick="closeModal('apply-modal')">&times;</button>
     </div>
     <p style="font-size:0.85rem;color:var(--text-dim)">
       The Applier Agent generated a custom tailored cover letter matching your profile skills:
@@ -263,7 +269,34 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div class="cover-box" id="modal-cover"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-secondary" onclick="copyCoverLetter()">📋 Copy Cover Letter</button>
-      <button class="btn btn-apply" onclick="closeModal()">Done</button>
+      <button class="btn btn-apply" onclick="closeModal('apply-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Multi-Channel Outreach Package -->
+<div class="modal-overlay" id="outreach-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="outreach-title">📬 Recruiter Outreach Package</div>
+      <button class="modal-close" onclick="closeModal('outreach-modal')">&times;</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">
+      Generated Email Pitch, LinkedIn Note, and Recruiter Phone Call Script with Candidate Phone & Email details:
+    </p>
+    
+    <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:4px">📧 DIRECT COLD EMAIL PITCH:</div>
+    <div class="cover-box" id="outreach-email"></div>
+
+    <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:4px">💼 LINKEDIN CONNECTION NOTE (300 Chars):</div>
+    <div class="cover-box" id="outreach-linkedin"></div>
+
+    <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:4px">📱 RECRUITER PHONE CALL & WHATSAPP SCRIPT:</div>
+    <div class="cover-box" id="outreach-phone"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:1rem">
+      <button class="btn btn-secondary" onclick="copyOutreach()">📋 Copy Outreach Package</button>
+      <button class="btn btn-apply" onclick="closeModal('outreach-modal')">Close</button>
     </div>
   </div>
 </div>
@@ -279,6 +312,7 @@ async function loadProfile() {
     const p = await res.json();
     if(p.full_name) document.getElementById('prof-name').value = p.full_name;
     if(p.email) document.getElementById('prof-email').value = p.email;
+    if(p.phone) document.getElementById('prof-phone').value = p.phone;
     if(p.target_roles) document.getElementById('prof-roles').value = p.target_roles.join(', ');
     if(p.skills) document.getElementById('prof-skills').value = p.skills.join(', ');
     document.getElementById('prof-intern').checked = !!p.prefer_internships;
@@ -288,6 +322,7 @@ async function loadProfile() {
 async function saveProfile() {
   const name = document.getElementById('prof-name').value.trim();
   const email = document.getElementById('prof-email').value.trim();
+  const phone = document.getElementById('prof-phone').value.trim();
   const roles = document.getElementById('prof-roles').value.split(',').map(s => s.trim()).filter(Boolean);
   const skills = document.getElementById('prof-skills').value.split(',').map(s => s.trim()).filter(Boolean);
   const prefer_internships = document.getElementById('prof-intern').checked;
@@ -295,10 +330,17 @@ async function saveProfile() {
   await fetch('/api/profile', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ full_name: name, email, target_roles: roles, skills, prefer_internships })
+    body: JSON.stringify({ full_name: name, email, phone, target_roles: roles, skills, prefer_internships })
   });
-  alert('Profile updated! Applier Agent will use these skills for applications.');
+  alert('Profile updated! Applier Agent will use these skills and contact details for applications.');
   loadJobs();
+}
+
+async function optimizeProfile() {
+  const res = await fetch('/api/profile/optimize', { method: 'POST' });
+  const data = await res.json();
+  document.getElementById('prof-skills').value = (data.skills || []).join(', ');
+  alert(`✨ AI Profile Optimized!\n\nAdded high-demand market skills: ${(data.suggested_additions||[]).join(', ')}\n\nLinkedIn Headline: ${data.linkedin_headline}`);
 }
 
 async function loadJobs() {
@@ -355,10 +397,11 @@ function renderJobs(jobs) {
         </div>
 
         <div class="job-footer">
-          <a class="source-link" href="${j.source_url || '#'}" target="_blank">🔗 View Details</a>
+          <a class="source-link" href="${j.source_url || '#'}" target="_blank">🔗 Details</a>
+          <button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;" onclick="openOutreachModal('${j.id}')">📬 Outreach Kit</button>
           ${isApplied ? 
-            `<button class="btn btn-secondary" style="font-size:0.78rem;padding:6px 12px;cursor:default" disabled>✅ Applied</button>` :
-            `<button class="btn btn-apply" style="font-size:0.78rem;padding:6px 12px;" onclick="fastApply('${j.id}')">⚡ 1-Click Apply</button>`
+            `<button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;cursor:default" disabled>✅ Applied</button>` :
+            `<button class="btn btn-apply" style="font-size:0.75rem;padding:5px 9px;" onclick="fastApply('${j.id}')">⚡ 1-Click Apply</button>`
           }
         </div>
       </div>
@@ -422,6 +465,26 @@ async function fastApply(jobId) {
   }
 }
 
+async function openOutreachModal(jobId) {
+  const modal = document.getElementById('outreach-modal');
+  document.getElementById('outreach-title').innerText = "Applier Agent Generating Outreach Package...";
+  document.getElementById('outreach-email').innerText = "Loading cold email pitch...";
+  document.getElementById('outreach-linkedin').innerText = "Loading LinkedIn connection note...";
+  document.getElementById('outreach-phone').innerText = "Loading call script & recruiter contact info...";
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/outreach`);
+    const data = await res.json();
+    document.getElementById('outreach-title').innerText = `📬 Recruiter Kit: ${data.job_title} @ ${data.company}`;
+    document.getElementById('outreach-email').innerText = `SUBJECT: ${data.email_subject}\n\n${data.email_body}`;
+    document.getElementById('outreach-linkedin').innerText = data.linkedin_note;
+    document.getElementById('outreach-phone').innerText = data.phone_script;
+  } catch(e) {
+    document.getElementById('outreach-email').innerText = "Error generating outreach: " + e.message;
+  }
+}
+
 function viewCover(appId) {
   const app = allApps.find(a => a.id === appId);
   if (!app) return;
@@ -430,14 +493,22 @@ function viewCover(appId) {
   document.getElementById('apply-modal').style.display = 'flex';
 }
 
-function closeModal() {
-  document.getElementById('apply-modal').style.display = 'none';
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
 }
 
 function copyCoverLetter() {
   const text = document.getElementById('modal-cover').innerText;
   navigator.clipboard.writeText(text);
   alert("Cover letter copied to clipboard!");
+}
+
+function copyOutreach() {
+  const email = document.getElementById('outreach-email').innerText;
+  const linkedin = document.getElementById('outreach-linkedin').innerText;
+  const phone = document.getElementById('outreach-phone').innerText;
+  navigator.clipboard.writeText(`=== COLD EMAIL ===\n${email}\n\n=== LINKEDIN NOTE ===\n${linkedin}\n\n=== PHONE SCRIPT ===\n${phone}`);
+  alert("Complete Recruiter Outreach Package copied to clipboard!");
 }
 
 function switchTab(tab) {

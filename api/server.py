@@ -144,6 +144,27 @@ async def update_profile(body: dict[str, Any]) -> JSONResponse:
     return JSONResponse(data)
 
 
+@app.post("/api/profile/optimize")
+async def optimize_profile() -> JSONResponse:
+    if not _applier:
+        return JSONResponse({"error": "Applier agent not initialized"}, status_code=500)
+    data = await _applier.optimize_profile()
+    await _broadcast({"event": "profile_optimized", "profile": data})
+    return JSONResponse(data)
+
+
+@app.get("/api/jobs/{job_id}/outreach")
+async def job_outreach(job_id: str) -> JSONResponse:
+    if not _applier:
+        return JSONResponse({"error": "Applier agent not initialized"}, status_code=500)
+    try:
+        data = await _applier.generate_outreach_package(job_id)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+
 @app.post("/api/goal")
 async def submit_goal(body: dict[str, str]) -> JSONResponse:
     goal = body.get("goal", "").strip()
