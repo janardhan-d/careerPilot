@@ -69,10 +69,11 @@ async def _broadcast(event: dict[str, Any]) -> None:
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
 async def _run_live_autonomous_loop():
-    """Real-World Autonomous Background Agent Loop for Janardhan Devarala."""
+    """Real-World Multi-Platform Autonomous Background Agent Loop for Janardhan Devarala."""
     await asyncio.sleep(5)
     roles = ["Data Analyst", "Python Developer", "AI Engineer", "Financial Analyst", "Machine Learning Intern"]
     locations = ["Hyderabad", "Bengaluru", "Remote"]
+    sources = ["LINKEDIN", "YCOMBINATOR", "CUTSHORT", "ZIPRECRUITER", "CAREER_PAGE"]
     import random
     import uuid
 
@@ -80,9 +81,10 @@ async def _run_live_autonomous_loop():
         try:
             role = random.choice(roles)
             loc = random.choice(locations)
-            logger.info("live_autonomous.sweep_start", role=role, location=loc)
+            src = random.choice(sources)
+            logger.info("live_autonomous.sweep_start", role=role, location=loc, source=src)
             
-            results = await registry.invoke("search_jobs", payload={"query": role, "location": loc, "max_results": 10})
+            results = await registry.invoke("search_jobs", payload={"query": role, "location": loc, "max_results": 10, "source": src})
             if results and isinstance(results, list):
                 async with get_session() as session:
                     for r in results:
@@ -93,7 +95,7 @@ async def _run_live_autonomous_loop():
                                 title=r["title"],
                                 company=r["company"],
                                 location=r.get("location", loc),
-                                source=r.get("source", "LINKEDIN"),
+                                source=r.get("source", src),
                                 source_url=r.get("source_url", ""),
                                 is_remote=bool(r.get("is_remote")),
                                 is_internship=bool(r.get("is_internship")),

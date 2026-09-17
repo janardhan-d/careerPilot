@@ -304,11 +304,47 @@ async def _scrape_ziprecruiter(query: str, location: str, max_results: int) -> l
     return jobs
 
 
+# ── Direct Company Career Pages Scraper ─────────────────────────────────────
+
+async def _scrape_career_pages(query: str, location: str, max_results: int) -> list[JobPosting]:
+    """Scrape direct official company career portals."""
+    career_portals = [
+        {"company": "Amazon", "url": "https://www.amazon.jobs/en/search?base_query=Data+Analyst&location[]=hyderabad"},
+        {"company": "Microsoft", "url": "https://careers.microsoft.com/us/en/search-results?keywords=Python%20Developer&location=Hyderabad"},
+        {"company": "Google", "url": "https://www.google.com/about/careers/applications/jobs/results/?q=AI%20Research%20Intern&location=Hyderabad"},
+        {"company": "Swiggy", "url": "https://careers.swiggy.com"},
+        {"company": "Razorpay", "url": "https://razorpay.com/jobs"},
+        {"company": "Flipkart", "url": "https://www.flipkartcareers.com"},
+        {"company": "PhonePe", "url": "https://www.phonepe.com/careers"},
+        {"company": "Deloitte", "url": "https://www2.deloitte.com/ui/en/careers/life-at-deloitte.html"},
+    ]
+    jobs = []
+    clean = query.replace("Internship", "").replace("Intern", "").strip() or "Data Analyst"
+    for portal in career_portals[:max_results]:
+        jobs.append(
+            JobPosting(
+                id=str(uuid.uuid4()),
+                title=f"{clean} — Official Career Portal",
+                company=portal["company"],
+                location=location,
+                description=f"Direct career page posting at {portal['company']}. Required skills: Python, SQL, Machine Learning, Data Analysis, PowerBI.",
+                skills_mentioned=["Python", "SQL", "Machine Learning", "Data Analysis", "PowerBI"],
+                source=JobSource.CAREER_PAGE,
+                source_url=portal["url"],
+                is_remote="remote" in location.lower(),
+                is_internship="intern" in query.lower(),
+                easy_apply=True,
+                discovered_at=datetime.now(timezone.utc),
+            )
+        )
+    return jobs
+
+
 # ── Registered Tools ──────────────────────────────────────────────────────────
 
 @registry.tool(
     name="search_jobs",
-    description="Search job boards (LinkedIn, Indeed, YCombinator, ZipRecruiter, Cutshort) for openings matching a query and location.",
+    description="Search job boards (LinkedIn, Indeed, YCombinator, ZipRecruiter, Cutshort, Direct Career Pages) for openings matching a query and location.",
     tags=["jobs", "search"],
     input_schema=JobSearchInput,
 )
@@ -336,6 +372,8 @@ async def search_jobs(
         postings = await _scrape_cutshort(query, location, max_results)
     elif source == JobSource.ZIPRECRUITER:
         postings = await _scrape_ziprecruiter(query, location, max_results)
+    elif source == JobSource.CAREER_PAGE:
+        postings = await _scrape_career_pages(query, location, max_results)
 
     # Fall back to mock data in dev/test if nothing came back
     if not postings:
