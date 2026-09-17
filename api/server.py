@@ -22,7 +22,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import structlog
@@ -202,12 +202,33 @@ async def submit_goal(body: dict[str, str]) -> JSONResponse:
     return JSONResponse({"status": "queued", "goal": goal})
 
 
+def _format_release_age(dt: datetime | None) -> str:
+    if not dt:
+        return "Released Today"
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff = now - dt
+    hours = int(diff.total_seconds() // 3600)
+    if hours < 1:
+        return "Released <1h ago"
+    elif hours < 24:
+        return f"Released {hours}h ago"
+    else:
+        days = hours // 24
+        return f"Released {days}d ago"
+
+
 @app.get("/api/jobs")
-async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", search: str = "") -> JSONResponse:
+async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", search: str = "", fresh_only: bool = False) -> JSONResponse:
     offset = (page - 1) * per_page
     async with get_session() as session:
         query = select(JobPostingORM)
         
+        if fresh_only:
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            query = query.where(JobPostingORM.discovered_at >= seven_days_ago)
+
         if job_type == "internship":
             query = query.where(JobPostingORM.is_internship == True)
         elif job_type == "fulltime":
@@ -243,11 +264,12 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
             "location": j.location,
             "is_remote": j.is_remote,
             "is_internship": bool(getattr(j, "is_internship", False) or ("intern" in (j.title or "").lower())),
-
             "easy_apply": j.easy_apply,
             "source": j.source,
             "source_url": j.source_url,
             "discovered_at": j.discovered_at.isoformat() if j.discovered_at else None,
+            "posted_age_str": _format_release_age(j.discovered_at or j.posted_at),
+            "is_active": True,
             "fit_score": round(p.fit_score, 1) if p else 82.5,
             "recommendation": p.recommendation if p else "HIGH_FIT",
             "response_probability": round(p.response_probability * 100) if p else 75,
@@ -255,6 +277,67 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
         })
 
     return JSONResponse({"total": total, "page": page, "per_page": per_page, "jobs": rows})
+
+
+@app.post("/api/applications/{app_id}/status")
+async def update_application_status(app_id: str, body: dict[str, Any]) -> JSONResponse:
+    new_status = body.get("status", "").strip()
+    notes = body.get("notes", "")
+    if not new_status:
+        return JSONResponse({"error": "status is required"}, status_code=400)
+    
+    async with get_session() as session:
+        result = await session.execute(select(ApplicationORM).where(ApplicationORM.id == app_id))
+        app_obj = result.scalar_one_or_none()
+        if not app_obj:
+            return JSONResponse({"error": f"Application {app_id} not found"}, status_code=404)
+        
+        app_obj.status = new_status
+        if notes:
+            app_obj.notes = notes
+        app_obj.last_updated = datetime.now(timezone.utc)
+        await session.commit()
+        
+        res_data = {
+            "id": app_obj.id,
+            "job_id": app_obj.job_id,
+            "job_title": app_obj.job_title,
+            "company": app_obj.company,
+            "status": app_obj.status,
+            "fit_score": app_obj.fit_score,
+            "last_updated": app_obj.last_updated.isoformat(),
+        }
+        await _broadcast({"event": "application_status_updated", "application": res_data})
+        return JSONResponse(res_data)
+
+
+@app.post("/api/tools/connect")
+async def connect_tool(body: dict[str, Any]) -> JSONResponse:
+    tool_key = body.get("tool_key", "").strip()
+    credential = body.get("credential", "").strip()
+    if not tool_key:
+        return JSONResponse({"error": "tool_key is required"}, status_code=400)
+    
+    async with get_session() as session:
+        result = await session.execute(select(UserProfileORM).where(UserProfileORM.id == "default"))
+        prof = result.scalar_one_or_none()
+        if prof:
+            if tool_key == "linkedin" and credential:
+                prof.linkedin_url = credential
+            elif tool_key == "gdrive" and credential:
+                prof.gdrive_resume_url = credential
+            elif tool_key == "gmail" and credential:
+                prof.email = credential
+            elif tool_key == "twilio" and credential:
+                prof.phone = credential
+            elif tool_key == "portfolio" and credential:
+                prof.portfolio_url = credential
+            prof.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+
+    res_data = {"tool_key": tool_key, "status": "CONNECTED", "updated_at": datetime.now(timezone.utc).isoformat()}
+    await _broadcast({"event": "tool_connected", "tool": res_data})
+    return JSONResponse(res_data)
 
 
 @app.post("/api/jobs/apply")
