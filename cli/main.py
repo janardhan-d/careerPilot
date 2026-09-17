@@ -34,13 +34,20 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich.text import Text
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 app = typer.Typer(
     name="careerpilot",
-    help="🚀 CareerPilot — AI-powered multi-agent job application manager",
+    help="CareerPilot — AI-powered multi-agent job application manager",
     add_completion=False,
     rich_markup_mode="rich",
 )
-console = Console()
+console = Console(legacy_windows=False)
 
 BANNER = """
 [bold cyan]
