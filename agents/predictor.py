@@ -116,8 +116,9 @@ class PredictorAgent(BaseAgent):
         else:
             # Sensible defaults when profile not yet synced
             self._user_skills = [
-                "python", "pytorch", "fastapi", "mlops", "langchain",
-                "sql", "docker", "git",
+                "python", "sql", "machine learning", "data analysis", "powerbi",
+                "scikit-learn", "pandas", "numpy", "financial analysis", "fastapi",
+                "pytorch", "docker", "git", "llms", "deep learning"
             ]
 
     async def _load_scored_ids(self) -> None:
