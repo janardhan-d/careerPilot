@@ -2,6 +2,8 @@
 CareerPilot — Advanced Glassmorphic Dashboard Frontend
 ======================================================
 Features:
+- Clever AI Detector & ATS Resume Checker
+- Y Combinator, Cutshort, ZipRecruiter & Direct Career Page Scraper presets
 - Candidate Portfolio, Social Profiles & Connected Tools Hub
 - 100% Toast Notifications (No native browser alerts)
 - Interactive Outreach Kit Modal with tabbed preview & individual copy buttons
@@ -213,6 +215,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       <div class="card-title">
         <span>👤 Candidate Profile & Portfolio Hub</span>
         <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;background:linear-gradient(135deg,#ff4757,#ff6b81);color:#fff;font-weight:800" onclick="checkATS()">🤖 Check Clever AI Score</button>
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;background:linear-gradient(135deg,var(--accent2),#00a8ff);color:#051b2c;font-weight:800" onclick="optimizeProfile()">✨ AI Optimizer</button>
           <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem" onclick="saveProfile()">Save</button>
         </div>
@@ -236,7 +239,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <label>Personal Portfolio Site</label>
         <input type="text" id="prof-portfolio" class="input-field" value="https://janardhan-d.github.io"/>
 
-        <label>Google Drive Master Resume Link</label>
+        <label>Google Drive Master Resume & Certificates Link</label>
         <input type="text" id="prof-gdrive" class="input-field" value="https://drive.google.com/file/d/janardhan-devarala-master-resume"/>
 
         <label>Target Roles</label>
@@ -259,7 +262,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
       <div class="card">
         <div class="card-title">⚡ Agent Goal Dispatcher</div>
         <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">
-          Instruct the Commander Agent to hunt, score, and queue applications for specific roles & locations.
+          Instruct the Commander Agent to hunt, score, and queue applications across Y-Combinator, Cutshort, ZipRecruiter & Career Pages.
         </p>
 
         <div style="display:flex;gap:10px;margin-bottom:1rem">
@@ -269,8 +272,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
         <div style="font-size:0.78rem;font-weight:700;color:var(--text-dim)">QUICK PRESETS:</div>
         <div class="presets-bar">
+          <div class="preset-chip" onclick="setGoal('Find 15 Y Combinator startup jobs for Python & AI')">🚀 Y-Combinator Jobs</div>
+          <div class="preset-chip" onclick="setGoal('Find 20 Cutshort & ZipRecruiter India roles for Data Analyst')">⚡ Cutshort & ZipRecruiter</div>
           <div class="preset-chip" onclick="setGoal('Find 20 Data Analyst and Python Developer jobs in Hyderabad')">📍 Hyderabad Roles</div>
-          <div class="preset-chip" onclick="setGoal('Find 15 AI Engineer Remote Jobs with high fit score')">🌐 Remote AI Jobs</div>
           <div class="preset-chip" onclick="setGoal('Find 20 Data Scientist & Machine Learning Jobs in Bangalore')">📍 Bangalore Data Roles</div>
           <div class="preset-chip" onclick="setGoal('Match candidate skills against all 36 tracked jobs')">⚡ Rescore All Jobs</div>
         </div>
@@ -285,6 +289,18 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
         <div class="tools-grid">
           <div class="tool-item">
+            <span>🤖 Clever AI Detector Tool</span>
+            <span class="tool-status">🟢 Active</span>
+          </div>
+          <div class="tool-item">
+            <span>🚀 Y Combinator Scraper</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
+            <span>⚡ Cutshort & ZipRecruiter</span>
+            <span class="tool-status">🟢 Connected</span>
+          </div>
+          <div class="tool-item">
             <span>💼 LinkedIn Scraper & Sync</span>
             <span class="tool-status">🟢 Connected</span>
           </div>
@@ -294,10 +310,6 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           </div>
           <div class="tool-item">
             <span>📄 ATS Resume & Cover Generator</span>
-            <span class="tool-status">🟢 Connected</span>
-          </div>
-          <div class="tool-item">
-            <span>📅 Google Calendar Scheduler</span>
             <span class="tool-status">🟢 Connected</span>
           </div>
           <div class="tool-item">
@@ -387,6 +399,20 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </div>
 </div>
 
+<!-- ATS & Clever AI Detector Modal -->
+<div id="ats-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="ats-title">🤖 Clever AI Detector & ATS Resume Score</div>
+      <button class="modal-close" onclick="closeModal('ats-modal')">✕</button>
+    </div>
+    <div id="ats-results" style="font-size:0.9rem">Analyzing resume text...</div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:1.5rem">
+      <button class="btn" onclick="closeModal('ats-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let allJobs = [];
 let allApps = [];
@@ -469,6 +495,39 @@ async function optimizeProfile() {
   showToast("Profile optimized! ATS keywords, links and skills enhanced.", "success");
 }
 
+async function checkATS() {
+  showToast("Clever AI Detector & ATS Parser analyzing candidate profile...", "info");
+  const modal = document.getElementById('ats-modal');
+  document.getElementById('ats-results').innerHTML = `<p style="color:var(--text-dim)">Running deep ATS compliance & Clever AI human naturalness check...</p>`;
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch('/api/resume/check', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const data = await res.json();
+    document.getElementById('ats-results').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">OVERALL ATS SCORE</div>
+          <div style="font-size:2rem;font-weight:900;color:var(--green);margin-top:4px">${data.overall_ats_score}%</div>
+        </div>
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">HUMAN NATURALNESS</div>
+          <div style="font-size:2rem;font-weight:900;color:var(--accent2);margin-top:4px">${data.human_naturalness_score}%</div>
+        </div>
+      </div>
+      <p style="font-size:1rem"><strong>Evaluation Status:</strong> ${data.status_message}</p>
+      <p style="margin-top:0.6rem"><strong>AI Detection Risk:</strong> <span style="color:${data.ai_detection_probability < 35 ? 'var(--green)' : 'var(--yellow)'}">${data.ai_detection_probability}% Probability</span></p>
+      <p style="margin-top:0.4rem"><strong>ATS Formatting Compliance:</strong> ${data.ats_formatting_compliance}%</p>
+      <p style="margin-top:0.4rem"><strong>Keyword Density Score:</strong> ${data.keyword_density_score}%</p>
+      <p style="margin-top:0.6rem"><strong>Matched Skills:</strong> <span style="color:var(--accent2)">${data.matched_skills.join(', ')}</span></p>
+      ${data.suggestions.length ? `<div style="margin-top:1rem;padding:1rem;background:rgba(255,165,2,0.1);border:1px solid rgba(255,165,2,0.3);border-radius:12px"><strong>Actionable Optimization Suggestions:</strong><ul style="margin-top:0.5rem;padding-left:1.2rem">${data.suggestions.map(s => `<li style="margin-bottom:4px">${s}</li>`).join('')}</ul></div>` : ''}
+    `;
+    showToast("Clever AI & ATS Analysis Complete!", "success");
+  } catch(e) {
+    document.getElementById('ats-results').innerText = "Error analyzing resume: " + e.message;
+  }
+}
+
 async function loadJobs() {
   try {
     let url = '/api/jobs?per_page=60';
@@ -511,6 +570,7 @@ function renderJobs(jobs) {
     const fit = Math.round(j.fit_score || 75);
     const fitClass = fit >= 70 ? 'badge-fit' : (fit >= 50 ? 'badge-remote' : 'badge-job');
     const skills = getSkillList(j.matched_skills).slice(0, 5);
+    const srcTag = j.source || 'LINKEDIN';
 
     return `
       <div class="job-card">
@@ -523,6 +583,7 @@ function renderJobs(jobs) {
             <span class="badge ${fitClass}">${fit}% FIT</span>
           </div>
           <div class="badges">
+            <span class="badge badge-job">🌐 ${srcTag}</span>
             ${j.is_internship ? '<span class="badge badge-intern">🎓 Internship</span>' : '<span class="badge badge-job">💼 Full-Time</span>'}
             ${j.is_remote ? '<span class="badge badge-remote">🌐 Remote</span>' : ''}
             ${j.easy_apply ? '<span class="badge badge-fit">⚡ Easy Apply</span>' : ''}

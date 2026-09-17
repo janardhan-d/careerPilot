@@ -28,6 +28,7 @@ from typing import Any
 import structlog
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
+from core.tool_registry import registry
 from fastapi.middleware.cors import CORSMiddleware
 
 import tools  # noqa: F401 — auto-register all tools
@@ -151,6 +152,32 @@ async def optimize_profile() -> JSONResponse:
     data = await _applier.optimize_profile()
     await _broadcast({"event": "profile_optimized", "profile": data})
     return JSONResponse(data)
+
+
+@app.post("/api/resume/check")
+async def check_resume(body: dict[str, Any]) -> JSONResponse:
+    resume_text = body.get("resume_text", "")
+    job_description = body.get("job_description", "")
+    if not resume_text and _applier:
+        profile = await _applier.get_profile()
+        skills_str = ", ".join(profile.get("skills", []))
+        roles_str = ", ".join(profile.get("target_roles", []))
+        resume_text = (
+            f"Candidate Name: {profile.get('full_name')}\n"
+            f"Email: {profile.get('email')} | Phone: {profile.get('phone')}\n"
+            f"GitHub: {profile.get('github_url')} | LinkedIn: {profile.get('linkedin_url')}\n"
+            f"Google Drive Resume: {profile.get('gdrive_resume_url')}\n\n"
+            f"PROFESSIONAL SUMMARY:\n{profile.get('bio')}\n\n"
+            f"TARGET ROLES:\n{roles_str}\n\n"
+            f"TECHNICAL SKILLS:\n{skills_str}\n\n"
+            f"EDUCATION & CERTIFICATIONS:\n"
+            f"• NPTEL Certification: Python for Data Science\n"
+            f"• Coursera Specialization: Financial Modeling & Data Analysis\n"
+            f"• Hackathon Finalist: AI Multi-Agent Application System\n"
+        )
+
+    result = await registry.invoke("analyze_ats_ai_detector", payload={"resume_text": resume_text, "job_description": job_description})
+    return JSONResponse(result)
 
 
 @app.get("/api/jobs/{job_id}/outreach")
