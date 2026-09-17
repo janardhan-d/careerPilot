@@ -428,6 +428,12 @@ async function loadApps() {
   } catch(e) {}
 }
 
+function getSkillList(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') return raw.split(' ').filter(Boolean);
+  return [];
+}
+
 function renderJobs(jobs) {
   const container = document.getElementById('jobs-container');
   if (!jobs.length) {
@@ -438,7 +444,7 @@ function renderJobs(jobs) {
     const isApplied = allApps.some(a => a.job_id === j.id);
     const fit = Math.round(j.fit_score || 75);
     const fitClass = fit >= 70 ? 'badge-fit' : (fit >= 50 ? 'badge-remote' : 'badge-job');
-    const skills = (j.matched_skills || '').split(' ').filter(Boolean).slice(0, 5);
+    const skills = getSkillList(j.matched_skills).slice(0, 5);
 
     return `
       <div class="job-card">
@@ -607,11 +613,13 @@ function switchTab(tab) {
 
 function filterJobs() {
   const query = document.getElementById('search-input').value.toLowerCase();
-  const filtered = allJobs.filter(j => 
-    j.title.toLowerCase().includes(query) ||
-    j.company.toLowerCase().includes(query) ||
-    (j.matched_skills || []).some(s => s.toLowerCase().includes(query))
-  );
+  const filtered = allJobs.filter(j => {
+    const titleMatch = (j.title || '').toLowerCase().includes(query);
+    const companyMatch = (j.company || '').toLowerCase().includes(query);
+    const skillsList = getSkillList(j.matched_skills);
+    const skillMatch = skillsList.some(s => String(s).toLowerCase().includes(query));
+    return titleMatch || companyMatch || skillMatch;
+  });
   renderJobs(filtered);
 }
 
