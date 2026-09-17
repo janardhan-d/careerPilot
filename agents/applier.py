@@ -125,12 +125,12 @@ class ApplierAgent(BaseAgent):
 
             # 2. Fetch Prediction fit score if available
             pred_res = await session.execute(select(PredictionORM).where(PredictionORM.job_id == job_id))
-            pred = pred_res.scalar_one_or_none()
+            pred = pred_res.scalars().first()
             fit_score = pred.fit_score if pred else 85.0
 
             # 3. Fetch User Profile
             prof_res = await session.execute(select(UserProfileORM).where(UserProfileORM.id == "default"))
-            user_profile = prof_res.scalar_one_or_none()
+            user_profile = prof_res.scalars().first()
             candidate_name = user_profile.full_name if user_profile else "Applicant Candidate"
             user_skills = ", ".join((user_profile.skills if user_profile else ["Python", "Machine Learning"])[:6])
 
@@ -154,7 +154,7 @@ class ApplierAgent(BaseAgent):
 
             # 5. Check existing application or create new
             app_res = await session.execute(select(ApplicationORM).where(ApplicationORM.job_id == job_id))
-            existing_app = app_res.scalar_one_or_none()
+            existing_app = app_res.scalars().first()
 
             now = datetime.now(timezone.utc)
             if existing_app:
@@ -184,20 +184,16 @@ class ApplierAgent(BaseAgent):
             await session.commit()
 
             # 6. Publish event on MessageBus
-            await self._bus.publish(
-                topic="application.submitted",
-                message=AgentMessage(
-                    sender=self.agent_id,
-                    msg_type=MessageType.EVENT,
-                    payload={
-                        "application_id": app_entry.id,
-                        "job_title": job.title,
-                        "company": job.company,
-                        "status": "APPLIED",
-                        "fit_score": fit_score,
-                    },
-                    priority=MessagePriority.HIGH,
-                ),
+            await self.emit_event(
+                topic="events",
+                payload={
+                    "type": "application_submitted",
+                    "application_id": app_entry.id,
+                    "job_title": job.title,
+                    "company": job.company,
+                    "status": "APPLIED",
+                    "fit_score": fit_score,
+                },
             )
 
             return {
