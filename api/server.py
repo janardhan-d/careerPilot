@@ -269,6 +269,17 @@ async def job_outreach(job_id: str) -> JSONResponse:
         return JSONResponse({"error": str(e)}, status_code=400)
 
 
+@app.get("/api/jobs/{job_id}/decision")
+async def job_decision(job_id: str) -> JSONResponse:
+    if not _applier:
+        return JSONResponse({"error": "Applier agent not initialized"}, status_code=500)
+    try:
+        data = await _applier.generate_decision_breakdown(job_id)
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
 
 @app.post("/api/goal")
 async def submit_goal(body: dict[str, str]) -> JSONResponse:

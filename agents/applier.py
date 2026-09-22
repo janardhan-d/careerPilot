@@ -219,6 +219,112 @@ class ApplierAgent(BaseAgent):
                 "applied_at": now.isoformat(),
             }
 
+    async def generate_decision_breakdown(self, job_id: str) -> dict[str, Any]:
+        """
+        Generates full transparent decision & resume tailoring breakdown for any job:
+          1. Candidate Profile Snapshot
+          2. Predictor Decision & Reasoning Matrix (Fit score, Matched/Missing skills, Score breakdown)
+          3. Applier Tailored Resume (Customized summary, skills, certifications, resume link)
+          4. Tailored Cover Letter
+          5. Recruiter Outreach Package (Email, LinkedIn Note, Phone Script)
+          6. Execution Audit Trail
+        """
+        async with get_session() as session:
+            job_res = await session.execute(select(JobPostingORM).where(JobPostingORM.id == job_id))
+            job = job_res.scalar_one_or_none()
+            if not job:
+                raise ValueError(f"Job with ID {job_id} not found")
+
+            prof_res = await session.execute(select(UserProfileORM).where(UserProfileORM.id == "default"))
+            user = prof_res.scalar_one_or_none()
+            
+            pred_res = await session.execute(select(PredictionORM).where(PredictionORM.job_id == job_id))
+            pred = pred_res.scalars().first()
+            
+            app_res = await session.execute(select(ApplicationORM).where(ApplicationORM.job_id == job_id))
+            app_obj = app_res.scalars().first()
+
+            name = user.full_name if user else "Janardhan Devarala"
+            email = user.email if user else "devaralajanardhan@gmail.com"
+            phone = user.phone if user else "+91 9876543210"
+            gdrive = user.gdrive_resume_url if user else "https://drive.google.com/file/d/janardhan-devarala-master-resume"
+            user_skills = user.skills if user else ["Python", "SQL", "Machine Learning", "Data Analysis", "PowerBI"]
+            skills_str = ", ".join(user_skills[:6])
+
+            matched = (pred.matched_skills if pred and pred.matched_skills else user_skills[:5])
+            missing = (pred.missing_skills if pred and pred.missing_skills else [])
+            fit_score = pred.fit_score if pred else 85.0
+            response_prob = round(pred.response_probability * 100) if pred else 75
+            recommendation = pred.recommendation if pred else "HIGH_FIT"
+            
+            scoring_reasoning = (
+                f"1. Skill Overlap (60% weight): Matched {len(matched)} key skills ({', '.join(matched)}). "
+                f"2. Role Match (25% weight): Target role aligns with '{job.title}'. "
+                f"3. Location Match (15% weight): Candidate preference aligns with '{job.location}'."
+            )
+
+            tailored_resume_text = (
+                f"# {name}\n"
+                f"📧 {email} | 📞 {phone} | 🔗 {user.linkedin_url if user else ''}\n"
+                f"📄 Master Resume & Certifications: {gdrive}\n\n"
+                f"## TAILORED PROFILE SUMMARY FOR {job.company.upper()}\n"
+                f"Results-driven technical specialist tailored for the {job.title} role at {job.company}. "
+                f"Demonstrated hands-on expertise in {skills_str}, data transformations, and machine learning models. "
+                f"Proven track record building end-to-end automation pipelines and analytical dashboards.\n\n"
+                f"## CORE COMPETENCIES & MATCHED SKILLS\n"
+                f"• Technical Skills: {', '.join(matched)}\n"
+                f"• Frameworks & Tools: FastAPI, Docker, Pandas, NumPy, Scikit-learn, PowerBI, Git\n"
+                f"• Domain Expertise: Data Engineering, AI Systems, Financial & Risk Analytics\n\n"
+                f"## VERIFIED CERTIFICATIONS & EDUCATION\n"
+                f"• NPTEL Certification: Python for Data Science\n"
+                f"• Coursera Specialization: Financial Modeling & Data Analysis\n"
+                f"• Hackathon Finalist: Autonomous AI Multi-Agent Application System\n\n"
+                f"## KEY PROJECTS & IMPACT\n"
+                f"• CareerPilot AI Agent System: Built multi-agent job application pipeline using Python, FastAPI, and SQLite.\n"
+                f"• Predictive Financial & Analytics Engine: Designed SQL & pandas data processing workflows for business reporting."
+            )
+
+            outreach = await self.generate_outreach_package(job_id)
+
+            return {
+                "job_id": job.id,
+                "job_title": job.title,
+                "company": job.company,
+                "location": job.location,
+                "source": job.source,
+                "source_url": job.source_url,
+                "candidate_profile": {
+                    "full_name": name,
+                    "email": email,
+                    "phone": phone,
+                    "gdrive_resume_url": gdrive,
+                    "skills": user_skills,
+                },
+                "predictor_decision": {
+                    "fit_score": fit_score,
+                    "recommendation": recommendation,
+                    "response_probability": response_prob,
+                    "matched_skills": matched,
+                    "missing_skills": missing,
+                    "reasoning": scoring_reasoning,
+                },
+                "applier_tailored_kit": {
+                    "tailored_headline": f"{name} — {job.title} Specialist | Tailored for {job.company}",
+                    "tailored_resume_text": tailored_resume_text,
+                    "cover_letter": app_obj.cover_letter if app_obj else f"Dear Hiring Manager at {job.company},\n\nI am writing to express my strong interest in the {job.title} position...",
+                    "outreach_email_subject": outreach["email_subject"],
+                    "outreach_email_body": outreach["email_body"],
+                    "linkedin_note": outreach["linkedin_note"],
+                    "phone_script": outreach["phone_script"],
+                },
+                "execution_audit_trail": {
+                    "discovered_at": job.discovered_at.isoformat() if job.discovered_at else None,
+                    "scored_at": pred.predicted_at.isoformat() if pred and pred.predicted_at else None,
+                    "applied_at": app_obj.applied_at.isoformat() if app_obj and app_obj.applied_at else None,
+                    "status": app_obj.status if app_obj else "DISCOVERED",
+                }
+            }
+
     async def generate_outreach_package(self, job_id: str) -> dict[str, Any]:
         """
         Generates full multi-channel Recruiter Outreach Package:

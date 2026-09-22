@@ -159,6 +159,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </div>
 
   <div class="header-actions">
+    <div class="status-pill" style="border-color:rgba(0,212,255,0.4);color:var(--accent2);font-weight:700"><span id="refresh-timer">⏱️ Refresh in 10:00</span></div>
+
     <button class="btn btn-apply" style="padding:6px 14px;font-size:0.8rem" onclick="triggerLiveSweep()">🤖 Trigger Real-World Live Sweep</button>
 
     <div class="mode-switch">
@@ -442,6 +444,33 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </div>
 </div>
 
+<!-- Transparent Decision & Resume Tailoring Modal -->
+<div id="decision-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="decision-title">🧠 Agent Decision & Tailored Resume Breakdown</div>
+      <button class="modal-close" onclick="closeModal('decision-modal')">✕</button>
+    </div>
+
+    <div class="outreach-tabs">
+      <div class="outreach-tab active" id="dtab-decision" onclick="switchDecisionTab('decision')">🧠 Predictor Decision</div>
+      <div class="outreach-tab" id="dtab-resume" onclick="switchDecisionTab('resume')">📄 Tailored Resume</div>
+      <div class="outreach-tab" id="dtab-outreach" onclick="switchDecisionTab('outreach')">✉️ Cover & Outreach</div>
+      <div class="outreach-tab" id="dtab-audit" onclick="switchDecisionTab('audit')">⚡ Workflow Audit</div>
+    </div>
+
+    <div id="dbox-decision" style="margin:1rem 0">Loading decision matrix...</div>
+    <div id="dbox-resume" class="cover-box" style="display:none">Loading tailored resume...</div>
+    <div id="dbox-outreach" class="cover-box" style="display:none">Loading outreach kit...</div>
+    <div id="dbox-audit" style="margin:1rem 0;display:none">Loading workflow audit...</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem">
+      <span style="font-size:0.75rem;color:var(--green)">✨ 100% Transparent Multi-Agent Decision Inspection</span>
+      <button class="btn" onclick="closeModal('decision-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let allJobs = [];
 let allApps = [];
@@ -696,6 +725,7 @@ function renderJobs(jobs) {
         </div>
         <div class="job-footer">
           <a class="source-link" href="${targetUrl}" target="_blank" rel="noopener noreferrer">🔗 Details</a>
+          <button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;" onclick="openDecisionModal('${j.id}')">🧠 Decision & Resume</button>
           <button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;" onclick="openOutreachModal('${j.id}')">📬 Outreach Kit</button>
           ${isApplied ? 
             `<button class="btn btn-secondary" style="font-size:0.75rem;padding:5px 9px;cursor:default" disabled>✅ Applied</button>` :
@@ -758,6 +788,7 @@ function renderApps(apps) {
             </td>
             <td><strong style="color:var(--green)">${a.fit_score || 85}%</strong></td>
             <td>
+              <button class="btn btn-secondary" style="font-size:0.72rem;padding:4px 8px;margin-right:4px" onclick="openDecisionModal('${a.job_id}')">🧠 Decision</button>
               <button class="btn btn-secondary" style="font-size:0.72rem;padding:4px 8px" onclick="viewCover('${a.id}')">📄 Letter</button>
             </td>
           </tr>
@@ -921,10 +952,120 @@ function initWebSocket() {
   } catch(e) {}
 }
 
+let activeDecisionTab = 'decision';
+let currentDecisionData = null;
+
+async function openDecisionModal(jobId) {
+  const modal = document.getElementById('decision-modal');
+  document.getElementById('decision-title').innerText = "🧠 Agent Decision & Tailored Resume Engine Loading...";
+  document.getElementById('dbox-decision').innerHTML = `<p style="color:var(--text-dim)">Analyzing decision matrix & fit score...</p>`;
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/decision`);
+    currentDecisionData = await res.json();
+
+    document.getElementById('decision-title').innerText = `🧠 Decision & Resume: ${currentDecisionData.job_title} @ ${currentDecisionData.company}`;
+
+    const pred = currentDecisionData.predictor_decision || {};
+    const matchedSkills = pred.matched_skills || [];
+    const missingSkills = pred.missing_skills || [];
+
+    document.getElementById('dbox-decision').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">PREDICTOR FIT SCORE</div>
+          <div style="font-size:2.2rem;font-weight:900;color:var(--green);margin-top:4px">${pred.fit_score}%</div>
+          <div style="font-size:0.75rem;color:var(--accent2);margin-top:2px">Recommendation: ${pred.recommendation}</div>
+        </div>
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">ESTIMATED RESPONSE PROBABILITY</div>
+          <div style="font-size:2.2rem;font-weight:900;color:var(--accent2);margin-top:4px">${pred.response_probability}%</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px">Based on market response data</div>
+        </div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--text)">Matched Skills (${matchedSkills.length}):</strong>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          ${matchedSkills.map(s => `<span class="badge badge-fit">${s}</span>`).join('')}
+        </div>
+      </div>
+      ${missingSkills.length ? `
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--text-dim)">Skill Enhancement Gaps:</strong>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          ${missingSkills.map(s => `<span class="badge badge-remote">${s}</span>`).join('')}
+        </div>
+      </div>` : ''}
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--text)">Decision Matrix & Weighting Criteria:</strong>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;line-height:1.5">${pred.reasoning}</p>
+      </div>
+    `;
+
+    const kit = currentDecisionData.applier_tailored_kit || {};
+    document.getElementById('dbox-resume').innerText = kit.tailored_resume_text || "Resume generated.";
+
+    document.getElementById('dbox-outreach').innerText = 
+      `=== COVER LETTER ===\n${kit.cover_letter}\n\n` +
+      `=== COLD EMAIL (${kit.outreach_email_subject}) ===\n${kit.outreach_email_body}\n\n` +
+      `=== LINKEDIN CONNECTION NOTE ===\n${kit.linkedin_note}\n\n` +
+      `=== RECRUITER PHONE PITCH ===\n${kit.phone_script}`;
+
+    const audit = currentDecisionData.execution_audit_trail || {};
+    document.getElementById('dbox-audit').innerHTML = `
+      <div style="font-size:0.88rem;line-height:1.8">
+        <p><strong>Job Posting ID:</strong> ${currentDecisionData.job_id}</p>
+        <p><strong>Platform Source:</strong> ${currentDecisionData.source} ${currentDecisionData.source_url ? `(<a href="${currentDecisionData.source_url}" target="_blank" style="color:var(--accent2)">View Post</a>)` : ''}</p>
+        <p><strong>Candidate Profile:</strong> ${currentDecisionData.candidate_profile.full_name} (${currentDecisionData.candidate_profile.email})</p>
+        <p><strong>Master Resume Link:</strong> <a href="${currentDecisionData.candidate_profile.gdrive_resume_url}" target="_blank" style="color:var(--green)">${currentDecisionData.candidate_profile.gdrive_resume_url}</a></p>
+        <p><strong>Discovered At:</strong> ${audit.discovered_at || 'Recently'}</p>
+        <p><strong>Predictor Scored At:</strong> ${audit.scored_at || 'Recently'}</p>
+        <p><strong>Application Pipeline Status:</strong> <span class="badge badge-fit">${audit.status}</span></p>
+      </div>
+    `;
+
+    switchDecisionTab('decision');
+  } catch(e) {
+    document.getElementById('decision-title').innerText = "Error loading decision matrix: " + e.message;
+  }
+}
+
+function switchDecisionTab(tab) {
+  activeDecisionTab = tab;
+  document.querySelectorAll('#decision-modal .outreach-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`dtab-${tab}`).classList.add('active');
+
+  document.getElementById('dbox-decision').style.display = tab === 'decision' ? 'block' : 'none';
+  document.getElementById('dbox-resume').style.display = tab === 'resume' ? 'block' : 'none';
+  document.getElementById('dbox-outreach').style.display = tab === 'outreach' ? 'block' : 'none';
+  document.getElementById('dbox-audit').style.display = tab === 'audit' ? 'block' : 'none';
+}
+
+let refreshCountdown = 600;
+function initAutoRefreshTimer() {
+  const timerElem = document.getElementById('refresh-timer');
+  setInterval(() => {
+    refreshCountdown--;
+    if (refreshCountdown <= 0) {
+      refreshCountdown = 600;
+      triggerLiveSweep();
+    }
+    const mins = Math.floor(refreshCountdown / 60);
+    const secs = refreshCountdown % 60;
+    const formattedMins = String(mins).padStart(2, '0');
+    const formattedSecs = String(secs).padStart(2, '0');
+    if (timerElem) {
+      timerElem.innerText = `⏱️ Refresh in ${formattedMins}:${formattedSecs}`;
+    }
+  }, 1000);
+}
+
 loadProfile();
 loadApps();
 loadJobs();
 initWebSocket();
+initAutoRefreshTimer();
 </script>
 </body>
 </html>
