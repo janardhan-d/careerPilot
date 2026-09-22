@@ -698,7 +698,7 @@ function renderJobs(jobs) {
     let targetUrl = j.source_url || '';
     if (!targetUrl || targetUrl.includes('/jobs/view/') || targetUrl === '#') {
       const cleanTitle = (j.title || 'Data Analyst').split('—')[0].split('/')[0].trim();
-      targetUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(cleanTitle)}&location=${encodeURIComponent(j.location || 'India')}`;
+      targetUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(cleanTitle)}&location=${encodeURIComponent(j.location || 'India')}&f_TPR=r604800`;
     }
 
     return `

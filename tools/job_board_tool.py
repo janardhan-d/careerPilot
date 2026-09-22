@@ -61,12 +61,13 @@ async def _scrape_linkedin(
 ) -> list[JobPosting]:
     """
     Scrape live real-world LinkedIn Jobs via guest API (no login required).
-    Returns real active JobPosting objects with verified individual job URLs.
+    Filters strictly for FRESH jobs posted within the last 7 days (f_TPR=r604800).
     """
     api_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
     params = {
         "keywords": query,
         "location": location,
+        "f_TPR": "r604800",  # Filter for jobs released within the past 7 days (Past Week)
         "start": 0,
     }
 
@@ -88,8 +89,15 @@ async def _scrape_linkedin(
                 company_el = card.select_one("h4.base-search-card__subtitle")
                 location_el = card.select_one("span.job-search-card__location")
                 link_el = card.select_one("a.base-card__full-link")
+                time_el = card.select_one("time")
 
                 if not title_el or not link_el:
+                    continue
+
+                # Filter out old postings (>7-14 days old / 1 month ago)
+                time_text = time_el.get_text(strip=True).lower() if time_el else ""
+                if "month" in time_text or "weeks" in time_text or "30d" in time_text:
+                    logger.info("linkedin_scraper.skipped_old_job", age=time_text, title=title_el.get_text(strip=True))
                     continue
 
                 title = title_el.get_text(strip=True)
@@ -99,7 +107,7 @@ async def _scrape_linkedin(
                 url = raw_url.split("?")[0] if raw_url else ""
 
                 if not url or "linkedin.com" not in url:
-                    url = f"https://www.linkedin.com/jobs/search/?keywords={query.replace(' ', '%20')}&location={location.replace(' ', '%20')}"
+                    url = f"https://www.linkedin.com/jobs/search/?keywords={query.replace(' ', '%20')}&location={location.replace(' ', '%20')}&f_TPR=r604800"
 
                 is_remote = any(kw in loc.lower() or kw in title.lower() for kw in ("remote", "anywhere", "work from home"))
                 is_intern = "intern" in title.lower() or "internship" in query.lower()
