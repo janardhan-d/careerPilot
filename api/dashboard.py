@@ -62,7 +62,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
   /* ── Agent Fleet Status ── */
   .fleet-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
-  .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+  .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: all 0.2s; }
+  .agent-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--glow); background: rgba(255,255,255,0.03); }
   .agent-avatar { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: var(--surface2); border: 1px solid var(--border); }
   .agent-info h4 { font-size: 0.95rem; font-weight: 700; color: var(--text); }
   .agent-info p { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
@@ -180,32 +181,32 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
   <!-- Agent Fleet Status -->
   <div class="fleet-bar">
-    <div class="agent-card">
+    <div class="agent-card" onclick="openAgentModal('commander')">
       <div class="agent-avatar">🎯</div>
       <div class="agent-info">
         <h4>Commander Agent</h4>
-        <p id="st-commander">Goal orchestrator active</p>
+        <p id="st-commander">Goal orchestrator active 📊</p>
       </div>
     </div>
-    <div class="agent-card">
+    <div class="agent-card" onclick="openAgentModal('tracker')">
       <div class="agent-avatar">🔍</div>
       <div class="agent-info">
         <h4>Tracker Agent</h4>
-        <p id="st-tracker">Scrape & DB indexing</p>
+        <p id="st-tracker">Scrape & DB indexing 📊</p>
       </div>
     </div>
-    <div class="agent-card">
+    <div class="agent-card" onclick="openAgentModal('predictor')">
       <div class="agent-avatar">🔮</div>
       <div class="agent-info">
         <h4>Predictor Agent</h4>
-        <p id="st-predictor">Skill fit scoring engine</p>
+        <p id="st-predictor">Skill fit scoring engine 📊</p>
       </div>
     </div>
-    <div class="agent-card">
+    <div class="agent-card" onclick="openAgentModal('applier')">
       <div class="agent-avatar">⚡</div>
       <div class="agent-info">
         <h4>Applier Agent</h4>
-        <p id="st-applier">LinkedIn, Mail & Call Outreach</p>
+        <p id="st-applier">Outreach & Fast Apply 📊</p>
       </div>
     </div>
   </div>
@@ -335,8 +336,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <!-- Tab Bar & Job Search -->
   <div class="tab-bar">
     <div class="tabs">
-      <div class="tab active" id="tab-all" onclick="switchTab('all')">All Opportunities (<span id="cnt-all">0</span>)</div>
-      <div class="tab" id="tab-fresh" onclick="switchTab('fresh')">🔥 Fresh Jobs (<7 Days Released)</div>
+      <div class="tab active" id="tab-fresh" onclick="switchTab('fresh')">🔥 Super Fresh (&lt;12 Hours Released)</div>
+      <div class="tab" id="tab-all" onclick="switchTab('all')">All Opportunities (<span id="cnt-all">0</span>)</div>
       <div class="tab" id="tab-internship" onclick="switchTab('internship')">🎓 Internships</div>
       <div class="tab" id="tab-fulltime" onclick="switchTab('fulltime')">💼 Full-Time Jobs</div>
       <div class="tab" id="tab-applications" onclick="switchTab('applications')">📑 My Applications (<span id="cnt-apps">0</span>)</div>
@@ -471,10 +472,33 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   </div>
 </div>
 
+<!-- Agent Telemetry & Execution Inspector Modal -->
+<div id="agent-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="agent-modal-title">🤖 Agent Execution Telemetry</div>
+      <button class="modal-close" onclick="closeModal('agent-modal')">✕</button>
+    </div>
+
+    <div class="outreach-tabs">
+      <div class="outreach-tab active" id="atab-stats" onclick="switchAgentTab('stats')">📊 Tasks & Storage</div>
+      <div class="outreach-tab" id="atab-results" onclick="switchAgentTab('results')">📜 Results & Visible Logs</div>
+    </div>
+
+    <div id="abox-stats" style="margin:1rem 0">Loading telemetry stats...</div>
+    <div id="abox-results" class="cover-box" style="display:none">Loading visible results...</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem">
+      <span style="font-size:0.75rem;color:var(--green)">🟢 Live Agent Telemetry Bus Connected</span>
+      <button class="btn" onclick="closeModal('agent-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let allJobs = [];
 let allApps = [];
-let currentTab = 'all';
+let currentTab = 'fresh';
 let currentOutreachTab = 'email';
 let activeConnectTool = '';
 
@@ -1040,6 +1064,67 @@ function switchDecisionTab(tab) {
   document.getElementById('dbox-resume').style.display = tab === 'resume' ? 'block' : 'none';
   document.getElementById('dbox-outreach').style.display = tab === 'outreach' ? 'block' : 'none';
   document.getElementById('dbox-audit').style.display = tab === 'audit' ? 'block' : 'none';
+}
+
+let currentAgentData = null;
+
+async function openAgentModal(agentId) {
+  const modal = document.getElementById('agent-modal');
+  document.getElementById('agent-modal-title').innerText = "🤖 Fetching Agent Telemetry...";
+  document.getElementById('abox-stats').innerHTML = `<p style="color:var(--text-dim)">Reading live agent bus & SQLite database...</p>`;
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/agents/${agentId}/telemetry`);
+    currentAgentData = await res.json();
+
+    document.getElementById('agent-modal-title').innerText = `${currentAgentData.name} — Execution Inspector`;
+
+    const st = currentAgentData.storage_info || {};
+    const met = currentAgentData.metrics || {};
+
+    document.getElementById('abox-stats').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">TASKS COMPLETED & PROCESSED</div>
+          <div style="font-size:2.4rem;font-weight:900;color:var(--green);margin-top:4px">${currentAgentData.tasks_completed_count}</div>
+          <div style="font-size:0.75rem;color:var(--accent2);margin-top:2px">Status: ${currentAgentData.running ? '🟢 RUNNING & ACTIVE' : '🔴 IDLE'}</div>
+        </div>
+        <div style="background:var(--surface2);padding:1.2rem;border-radius:14px;border:1px solid var(--border)">
+          <div style="font-size:0.75rem;color:var(--text-dim);font-weight:700">STORAGE & DATABASE LOCATION</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--accent2);margin-top:6px">${st.database || 'SQLite DB'}</div>
+          <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px">Table: <code>${st.table || (st.tables || []).join(', ')}</code></div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;word-break:break-all">Path: <code>${st.path}</code></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--text)">Operational Role & Scope:</strong>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-top:4px">${currentAgentData.role}</p>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--text)">Live Execution Parameters & Metrics:</strong>
+        <div style="background:var(--surface2);padding:0.9rem;border-radius:12px;margin-top:6px;font-size:0.82rem;line-height:1.6">
+          ${Object.entries(met).map(([k, v]) => `<div><strong>${k.replace(/_/g, ' ').toUpperCase()}:</strong> <span style="color:var(--accent2)">${v}</span></div>`).join('')}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('abox-results').innerText = JSON.stringify(currentAgentData.recent_results, null, 2);
+
+    switchAgentTab('stats');
+  } catch(e) {
+    document.getElementById('agent-modal-title').innerText = "Error loading agent telemetry: " + e.message;
+  }
+}
+
+function switchAgentTab(tab) {
+  document.querySelectorAll('#agent-modal .outreach-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`atab-${tab}`).classList.add('active');
+
+  document.getElementById('abox-stats').style.display = tab === 'stats' ? 'block' : 'none';
+  document.getElementById('abox-results').style.display = tab === 'results' ? 'block' : 'none';
 }
 
 let refreshCountdown = 600;

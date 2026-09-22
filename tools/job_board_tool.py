@@ -61,13 +61,13 @@ async def _scrape_linkedin(
 ) -> list[JobPosting]:
     """
     Scrape live real-world LinkedIn Jobs via guest API (no login required).
-    Filters strictly for FRESH jobs posted within the last 7 days (f_TPR=r604800).
+    Filters strictly for SUPER FRESH jobs posted within the last 12 hours (f_TPR=r43200).
     """
     api_url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
     params = {
         "keywords": query,
         "location": location,
-        "f_TPR": "r604800",  # Filter for jobs released within the past 7 days (Past Week)
+        "f_TPR": "r43200",  # Filter for jobs released within the past 12 hours (43,200 seconds)
         "start": 0,
     }
 
@@ -94,10 +94,10 @@ async def _scrape_linkedin(
                 if not title_el or not link_el:
                     continue
 
-                # Filter out old postings (>7-14 days old / 1 month ago)
+                # Filter out old postings (>12h old: containing day, days, week, month)
                 time_text = time_el.get_text(strip=True).lower() if time_el else ""
-                if "month" in time_text or "weeks" in time_text or "30d" in time_text:
-                    logger.info("linkedin_scraper.skipped_old_job", age=time_text, title=title_el.get_text(strip=True))
+                if any(kw in time_text for kw in ("day", "days", "week", "weeks", "month", "months", "30d", "14d", "2d", "3d", "4d", "5d", "6d", "7d")):
+                    logger.info("linkedin_scraper.skipped_older_job", age=time_text, title=title_el.get_text(strip=True))
                     continue
 
                 title = title_el.get_text(strip=True)
@@ -107,7 +107,7 @@ async def _scrape_linkedin(
                 url = raw_url.split("?")[0] if raw_url else ""
 
                 if not url or "linkedin.com" not in url:
-                    url = f"https://www.linkedin.com/jobs/search/?keywords={query.replace(' ', '%20')}&location={location.replace(' ', '%20')}&f_TPR=r604800"
+                    url = f"https://www.linkedin.com/jobs/search/?keywords={query.replace(' ', '%20')}&location={location.replace(' ', '%20')}&f_TPR=r43200"
 
                 is_remote = any(kw in loc.lower() or kw in title.lower() for kw in ("remote", "anywhere", "work from home"))
                 is_intern = "intern" in title.lower() or "internship" in query.lower()
