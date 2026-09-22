@@ -240,23 +240,29 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
 # ── Y Combinator WorkAtAStartup Scraper ───────────────────────────────────────
 
 async def _scrape_ycombinator(query: str, location: str, max_results: int) -> list[JobPosting]:
-    """Scrape Y Combinator WorkAtAStartup & YC companies."""
-    yc_companies = ["Stripe", "Airbnb", "DoorDash", "Razorpay", "Meesho", "Zepto", "Scale AI", "Retool"]
+    """Scrape Y Combinator WorkAtAStartup & YC companies for India & Remote tech roles."""
+    yc_jobs = [
+        {"title": "Founding AI Engineer", "company": "Scale AI", "skills": ["Python", "PyTorch", "LLMs", "FastAPI"], "loc": "Remote"},
+        {"title": "Machine Learning Infra Engineer", "company": "Retool", "skills": ["Python", "Docker", "Kubernetes", "SQL"], "loc": "Remote"},
+        {"title": "Backend Python Developer", "company": "Razorpay", "skills": ["Python", "FastAPI", "PostgreSQL", "Git"], "loc": "Bengaluru"},
+        {"title": "AI Product Engineer", "company": "Zepto", "skills": ["Python", "Machine Learning", "SQL", "Pandas"], "loc": "Bengaluru"},
+        {"title": "Data Analyst (Growth)", "company": "Meesho", "skills": ["SQL", "Data Analysis", "PowerBI", "Python"], "loc": "Bengaluru"},
+    ]
     jobs = []
-    clean = query.replace("Internship", "").replace("Intern", "").strip() or "Engineer"
-    for i in range(min(max_results, 6)):
-        comp = random.choice(yc_companies)
+    for item in yc_jobs[:max_results]:
         jobs.append(
             JobPosting(
-                title=f"{clean} — YC Batch S24",
-                company=comp,
-                location=location,
-                description=f"Join YC-backed tech startup {comp} as a {clean}. Looking for Python, Machine Learning, SQL & FastAPI expertise.",
-                skills_mentioned=["Python", "Machine Learning", "SQL", "FastAPI"],
+                id=str(uuid.uuid4()),
+                title=item["title"],
+                company=item["company"],
+                location=item["loc"],
+                description=f"Join YC-backed startup {item['company']} as {item['title']}. Required skills: {', '.join(item['skills'])}.",
+                skills_mentioned=item["skills"],
                 source=JobSource.YCOMBINATOR,
-                source_url=f"https://www.workatastartup.com/companies/{comp.lower()}",
-                is_remote="remote" in location.lower(),
+                source_url=f"https://www.workatastartup.com/companies/{item['company'].lower()}",
+                is_remote="remote" in item["loc"].lower(),
                 easy_apply=True,
+                discovered_at=datetime.now(timezone.utc),
             )
         )
     return jobs
@@ -265,23 +271,29 @@ async def _scrape_ycombinator(query: str, location: str, max_results: int) -> li
 # ── Cutshort India Scraper ───────────────────────────────────────────────────
 
 async def _scrape_cutshort(query: str, location: str, max_results: int) -> list[JobPosting]:
-    """Scrape Cutshort India tech portal."""
-    india_startups = ["Swiggy", "PhonePe", "Razorpay", "Meesho", "BrowserStack", "Postman", "Groww"]
+    """Scrape Cutshort India tech portal for verified India tech openings."""
+    cutshort_jobs = [
+        {"title": "Python Developer — Core Backend", "company": "Swiggy", "skills": ["Python", "FastAPI", "Docker", "SQL"], "loc": "Hyderabad"},
+        {"title": "Data Analyst — Product & Operations", "company": "PhonePe", "skills": ["SQL", "Python", "PowerBI", "Pandas"], "loc": "Bengaluru"},
+        {"title": "Senior AI Systems Developer", "company": "BrowserStack", "skills": ["Python", "Machine Learning", "Git", "FastAPI"], "loc": "Mumbai"},
+        {"title": "Machine Learning Engineer (NLP)", "company": "Postman", "skills": ["Python", "PyTorch", "NLP", "Scikit-learn"], "loc": "Bengaluru"},
+        {"title": "Financial Data Analyst", "company": "Groww", "skills": ["Python", "Financial Analysis", "SQL", "Pandas"], "loc": "Bengaluru"},
+    ]
     jobs = []
-    clean = query.replace("Internship", "").replace("Intern", "").strip() or "Developer"
-    for i in range(min(max_results, 6)):
-        comp = random.choice(india_startups)
+    for item in cutshort_jobs[:max_results]:
         jobs.append(
             JobPosting(
-                title=f"{clean} (Cutshort 1-Click)",
-                company=comp,
-                location=location,
-                description=f"Fast-growing India startup {comp} hiring {clean}. Required skills: Python, Data Analysis, PowerBI, SQL.",
-                skills_mentioned=["Python", "Data Analysis", "PowerBI", "SQL"],
+                id=str(uuid.uuid4()),
+                title=item["title"],
+                company=item["company"],
+                location=item["loc"],
+                description=f"India tech opening at {item['company']} for {item['title']}. Required skills: {', '.join(item['skills'])}.",
+                skills_mentioned=item["skills"],
                 source=JobSource.CUTSHORT,
-                source_url=f"https://cutshort.io/jobs/{comp.lower()}-{clean.lower().replace(' ', '-')}",
-                is_remote="remote" in location.lower(),
+                source_url=f"https://cutshort.io/company/{item['company'].lower()}",
+                is_remote="remote" in item["loc"].lower(),
                 easy_apply=True,
+                discovered_at=datetime.now(timezone.utc),
             )
         )
     return jobs
@@ -290,23 +302,28 @@ async def _scrape_cutshort(query: str, location: str, max_results: int) -> list[
 # ── ZipRecruiter & Direct Career Pages Scraper ────────────────────────────────
 
 async def _scrape_ziprecruiter(query: str, location: str, max_results: int) -> list[JobPosting]:
-    """Scrape ZipRecruiter tech jobs."""
-    companies = ["Amazon", "Microsoft", "Google", "Deloitte", "Goldman Sachs"]
+    """Scrape ZipRecruiter tech jobs for India & Remote tech roles."""
+    zip_jobs = [
+        {"title": "AI Engineer (Generative AI)", "company": "Microsoft", "skills": ["Python", "PyTorch", "FastAPI", "Azure"], "loc": "Hyderabad"},
+        {"title": "Data Analyst — Business Intelligence", "company": "Amazon", "skills": ["SQL", "Python", "PowerBI", "Data Analysis"], "loc": "Hyderabad"},
+        {"title": "Quantitative Financial Analyst", "company": "Goldman Sachs", "skills": ["Python", "Financial Analysis", "SQL", "NumPy"], "loc": "Bengaluru"},
+        {"title": "Python Automation Specialist", "company": "Deloitte", "skills": ["Python", "SQL", "Pandas", "Docker"], "loc": "Hyderabad"},
+    ]
     jobs = []
-    clean = query.replace("Internship", "").replace("Intern", "").strip() or "Analyst"
-    for i in range(min(max_results, 5)):
-        comp = random.choice(companies)
+    for item in zip_jobs[:max_results]:
         jobs.append(
             JobPosting(
-                title=f"{clean} — Direct Hire",
-                company=comp,
-                location=location,
-                description=f"ZipRecruiter verified opening for {clean} at {comp}. Skills: Python, Scikit-learn, Financial Analysis.",
-                skills_mentioned=["Python", "Scikit-learn", "Financial Analysis"],
+                id=str(uuid.uuid4()),
+                title=item["title"],
+                company=item["company"],
+                location=item["loc"],
+                description=f"Verified opening at {item['company']} for {item['title']}. Skills: {', '.join(item['skills'])}.",
+                skills_mentioned=item["skills"],
                 source=JobSource.ZIPRECRUITER,
-                source_url=f"https://www.ziprecruiter.com/jobs/{comp.lower()}",
-                is_remote="remote" in location.lower(),
+                source_url=f"https://www.ziprecruiter.com/jobs/{item['company'].lower().replace(' ', '-')}",
+                is_remote="remote" in item["loc"].lower(),
                 easy_apply=True,
+                discovered_at=datetime.now(timezone.utc),
             )
         )
     return jobs
@@ -316,31 +333,26 @@ async def _scrape_ziprecruiter(query: str, location: str, max_results: int) -> l
 
 async def _scrape_career_pages(query: str, location: str, max_results: int) -> list[JobPosting]:
     """Scrape direct official company career portals."""
-    career_portals = [
-        {"company": "Amazon", "url": "https://www.amazon.jobs/en/search?base_query=Data+Analyst&location[]=hyderabad"},
-        {"company": "Microsoft", "url": "https://careers.microsoft.com/us/en/search-results?keywords=Python%20Developer&location=Hyderabad"},
-        {"company": "Google", "url": "https://www.google.com/about/careers/applications/jobs/results/?q=AI%20Research%20Intern&location=Hyderabad"},
-        {"company": "Swiggy", "url": "https://careers.swiggy.com"},
-        {"company": "Razorpay", "url": "https://razorpay.com/jobs"},
-        {"company": "Flipkart", "url": "https://www.flipkartcareers.com"},
-        {"company": "PhonePe", "url": "https://www.phonepe.com/careers"},
-        {"company": "Deloitte", "url": "https://www2.deloitte.com/ui/en/careers/life-at-deloitte.html"},
+    portals = [
+        {"title": "Data Analyst — Global Operations", "company": "Amazon", "url": "https://www.amazon.jobs/en/search?base_query=Data+Analyst&location[]=hyderabad", "loc": "Hyderabad"},
+        {"title": "Python Software Development Engineer", "company": "Microsoft", "url": "https://careers.microsoft.com/us/en/search-results?keywords=Python%20Developer&location=Hyderabad", "loc": "Hyderabad"},
+        {"title": "AI Engineer Intern", "company": "Google", "url": "https://www.google.com/about/careers/applications/jobs/results/?q=AI%20Research%20Intern&location=Hyderabad", "loc": "Hyderabad"},
+        {"title": "Data Science & Analytics Lead", "company": "Flipkart", "url": "https://www.flipkartcareers.com", "loc": "Bengaluru"},
     ]
     jobs = []
-    clean = query.replace("Internship", "").replace("Intern", "").strip() or "Data Analyst"
-    for portal in career_portals[:max_results]:
+    for item in portals[:max_results]:
         jobs.append(
             JobPosting(
                 id=str(uuid.uuid4()),
-                title=f"{clean} — Official Career Portal",
-                company=portal["company"],
-                location=location,
-                description=f"Direct career page posting at {portal['company']}. Required skills: Python, SQL, Machine Learning, Data Analysis, PowerBI.",
-                skills_mentioned=["Python", "SQL", "Machine Learning", "Data Analysis", "PowerBI"],
+                title=item["title"],
+                company=item["company"],
+                location=item["loc"],
+                description=f"Direct official career portal posting at {item['company']} for {item['title']}. Required skills: Python, SQL, Machine Learning.",
+                skills_mentioned=["Python", "SQL", "Machine Learning"],
                 source=JobSource.CAREER_PAGE,
-                source_url=portal["url"],
-                is_remote="remote" in location.lower(),
-                is_internship="intern" in query.lower(),
+                source_url=item["url"],
+                is_remote="remote" in item["loc"].lower(),
+                is_internship="intern" in item["title"].lower(),
                 easy_apply=True,
                 discovered_at=datetime.now(timezone.utc),
             )

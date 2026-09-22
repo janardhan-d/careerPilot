@@ -309,8 +309,8 @@ def _format_release_age(dt: datetime | None) -> str:
 
 
 @app.get("/api/jobs")
-async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", search: str = "", fresh_only: bool = False) -> JSONResponse:
-    offset = (page - 1) * per_page
+async def list_jobs(page: int = 1, per_page: int = 60, job_type: str = "all", search: str = "", fresh_only: bool = False) -> JSONResponse:
+    FOREIGN_EXCLUDES = ["vietnam", "spain", "madrid", "canada", "calgary", "turkey", "istanbul", "türkiye", "singapore", "helsinki", "finland", "toronto"]
     async with get_session() as session:
         query = select(JobPostingORM)
         
@@ -330,12 +330,8 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
                 (JobPostingORM.location.ilike(f"%{search}%"))
             )
 
-        total_r = await session.execute(select(func.count()).select_from(query.subquery()))
-        total = total_r.scalar_one()
-
         result = await session.execute(
             query.order_by(JobPostingORM.discovered_at.desc())
-            .offset(offset).limit(per_page)
         )
         jobs = result.scalars().all()
 
@@ -344,7 +340,17 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
         pred_map = {p.job_id: p for p in pred_result.scalars().all()}
 
     rows = []
+    seen_keys = set()
     for j in jobs:
+        loc_lower = (j.location or "").lower()
+        if any(f in loc_lower for f in FOREIGN_EXCLUDES) and not j.is_remote:
+            continue
+
+        dedup_key = (j.title.strip().lower(), j.company.strip().lower())
+        if dedup_key in seen_keys:
+            continue
+        seen_keys.add(dedup_key)
+
         p = pred_map.get(j.id)
         rows.append({
             "id": j.id,
@@ -365,7 +371,11 @@ async def list_jobs(page: int = 1, per_page: int = 30, job_type: str = "all", se
             "matched_skills": (p.matched_skills or ["Python", "Machine Learning"])[:5] if p else ["Python", "AI System"],
         })
 
-    return JSONResponse({"total": total, "page": page, "per_page": per_page, "jobs": rows})
+    # Paginate deduplicated rows
+    offset = (page - 1) * per_page
+    paginated_rows = rows[offset:offset + per_page]
+
+    return JSONResponse({"total": len(rows), "page": page, "per_page": per_page, "jobs": paginated_rows})
 
 
 @app.post("/api/applications/{app_id}/status")
