@@ -83,9 +83,21 @@ async def _run_live_autonomous_loop():
             loc = random.choice(locations)
             src = random.choice(sources)
             logger.info("live_autonomous.sweep_start", role=role, location=loc, source=src)
-            
+
+            await _broadcast({
+                "event": "agent_action",
+                "agent": "commander",
+                "msg": f"🎯 Commander dispatched sweep: Searching '{role}' in '{loc}' via {src} scraper."
+            })
+
             results = await registry.invoke("search_jobs", payload={"query": role, "location": loc, "max_results": 10, "source": src})
             if results and isinstance(results, list):
+                await _broadcast({
+                    "event": "agent_action",
+                    "agent": "tracker",
+                    "msg": f"🔍 Tracker scraped {len(results)} fresh <12h postings from {src}."
+                })
+
                 async with get_session() as session:
                     for r in results:
                         existing = await session.execute(select(JobPostingORM).where(JobPostingORM.title == r["title"], JobPostingORM.company == r["company"]))
@@ -104,7 +116,7 @@ async def _run_live_autonomous_loop():
                             )
                             session.add(j_obj)
                             await session.commit()
-                            
+
                             if _predictor:
                                 pred_res = await _predictor._score_job_orm(j_obj)
                                 pred_orm = PredictionORM(
@@ -121,14 +133,25 @@ async def _run_live_autonomous_loop():
                                 )
                                 session.add(pred_orm)
                                 await session.commit()
-                                
+
+                                await _broadcast({
+                                    "event": "agent_action",
+                                    "agent": "predictor",
+                                    "msg": f"🔮 Predictor evaluated '{j_obj.title}' @ {j_obj.company} -> Fit Score: {pred_res.fit_score}% ({pred_res.recommendation})."
+                                })
+
                                 if pred_res.fit_score >= 70.0 and _applier:
                                     try:
                                         app_res = await _applier.apply_to_job(j_obj.id)
+                                        await _broadcast({
+                                            "event": "agent_action",
+                                            "agent": "applier",
+                                            "msg": f"⚡ Applier generated ATS Tailored Resume & Fast-Applied to {j_obj.company}!"
+                                        })
                                         await _broadcast({"event": "application_submitted", "application": app_res})
                                     except Exception as exc:
                                         logger.warning("live_autonomous.apply_error", error=str(exc))
-                                        
+
             await _broadcast({"event": "live_autonomous_cycle_complete", "timestamp": datetime.now(timezone.utc).isoformat()})
         except Exception as e:
             logger.error("live_autonomous.error", error=str(e))

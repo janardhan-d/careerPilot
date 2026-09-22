@@ -211,6 +211,26 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- Live Multi-Agent Execution Stream Terminal -->
+  <div class="card" style="margin-bottom: 2rem; background: #0e1017; border-color: rgba(0,212,255,0.25);">
+    <div class="card-title" style="color:var(--accent2)">
+      <span>📡 Live Multi-Agent Real-Time Execution & Thought Stream</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" style="padding:3px 10px;font-size:0.75rem" onclick="clearLiveStream()">🗑️ Clear Log</button>
+        <span style="font-size:0.75rem;color:var(--green);display:flex;align-items:center;gap:4px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)"></span>
+          Live Event Bus Active
+        </span>
+      </div>
+    </div>
+    <div id="live-stream-box" style="font-family: monospace; font-size: 0.82rem; background: #07080c; border: 1px solid var(--border); border-radius: 12px; padding: 1rem; max-height: 190px; overflow-y: auto; color: #70a1ff; line-height: 1.6;">
+      <div><span style="color:var(--text-dim)">[08:19:00]</span> <strong style="color:var(--accent2)">🎯 COMMANDER:</strong> Multi-Agent Bus initialized. Goal orchestrator active for candidate Janardhan Devarala.</div>
+      <div><span style="color:var(--text-dim)">[08:19:02]</span> <strong style="color:var(--green)">🔍 TRACKER:</strong> Scraping fresh &lt;12h jobs across LinkedIn, Y Combinator, Cutshort, ZipRecruiter &amp; Career Pages.</div>
+      <div><span style="color:var(--text-dim)">[08:19:04]</span> <strong style="color:var(--yellow)">🔮 PREDICTOR:</strong> Evaluating ATS fit scores &amp; decision matrices against candidate master skills.</div>
+      <div><span style="color:var(--text-dim)">[08:19:05]</span> <strong style="color:var(--accent)">⚡ APPLIER:</strong> 1-Click Fast Applier &amp; Recruiter Outreach Package Generator ready.</div>
+    </div>
+  </div>
+
   <!-- Goal & Profile Grid -->
   <div class="grid-profile">
     
@@ -467,7 +487,11 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem">
       <span style="font-size:0.75rem;color:var(--green)">✨ 100% Transparent Multi-Agent Decision Inspection</span>
-      <button class="btn" onclick="closeModal('decision-modal')">Close</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:5px 10px" onclick="downloadTailoredResume()">📥 Download Resume (.md)</button>
+        <button class="btn btn-secondary" style="font-size:0.78rem;padding:5px 10px" onclick="copyTailoredResume()">📋 Copy Resume</button>
+        <button class="btn" onclick="closeModal('decision-modal')">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -961,6 +985,39 @@ async function dispatchGoal() {
   showToast(`Goal submitted to Commander Agent: "${goal}"`, 'success');
 }
 
+function appendLiveStreamLog(msg, color = '#70a1ff') {
+  const box = document.getElementById('live-stream-box');
+  if (!box) return;
+  const timeStr = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.innerHTML = `<span style="color:var(--text-dim)">[${timeStr}]</span> <span style="color:${color}">${msg}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLiveStream() {
+  const box = document.getElementById('live-stream-box');
+  if (box) box.innerHTML = `<div><span style="color:var(--text-dim)">[${new Date().toLocaleTimeString()}]</span> Stream cleared. Live Agent Bus listening...</div>`;
+}
+
+function downloadTailoredResume() {
+  const text = document.getElementById('dbox-resume').innerText;
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Janardhan_Devarala_Tailored_Resume.md`;
+  a.click();
+  showToast("Tailored Markdown Resume downloaded!", "success");
+}
+
+function copyTailoredResume() {
+  const text = document.getElementById('dbox-resume').innerText;
+  if (!text) return;
+  navigator.clipboard.writeText(text);
+  showToast("Tailored Resume copied to clipboard!", "success");
+}
+
 // Setup WebSocket Live Event Stream
 function initWebSocket() {
   try {
@@ -968,9 +1025,18 @@ function initWebSocket() {
     const ws = new WebSocket(`${wsProtocol}//${location.host}/ws/events`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.event === 'application_submitted' || data.event === 'application_status_updated') {
+      if (data.event === 'agent_action') {
+        let color = '#70a1ff';
+        if (data.agent === 'tracker') color = '#2ed573';
+        else if (data.agent === 'predictor') color = '#ffa502';
+        else if (data.agent === 'applier') color = '#6c63ff';
+        appendLiveStreamLog(data.msg, color);
+      } else if (data.event === 'application_submitted' || data.event === 'application_status_updated') {
+        appendLiveStreamLog(`⚡ Application status update: ${data.event}`, '#2ed573');
         loadApps();
         loadJobs();
+      } else if (data.event === 'autonomous_sweep_triggered') {
+        appendLiveStreamLog(`🚀 Autonomous sweep triggered across multi-platform scrapers`, '#00d4ff');
       }
     };
   } catch(e) {}
