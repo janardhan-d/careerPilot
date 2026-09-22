@@ -202,35 +202,85 @@ def _mock_jobs(query: str, location: str, n: int = 5) -> list[JobPosting]:
     """Generate realistic-looking mock jobs when scrapers are unavailable."""
     companies = [
         "Google", "Microsoft", "Amazon", "Flipkart", "Swiggy",
-        "PhonePe", "Razorpay", "Meesho", "Ola", "Byju's",
+        "PhonePe", "Razorpay", "Meesho", "BrowserStack", "Postman",
     ]
     skills_pool = [
-        "Python", "PyTorch", "TensorFlow", "LLMs", "MLOps",
-        "Kubernetes", "FastAPI", "SQL", "Spark", "React",
+        "Python", "PyTorch", "FastAPI", "SQL", "Pandas",
+        "Machine Learning", "Docker", "PowerBI", "Git", "Data Analysis",
     ]
-    jobs = []
-    is_intern = "intern" in query.lower()
-    clean_query = query.replace("Internship", "").replace("internship", "").replace("Intern", "").replace("intern", "").strip() or "Software Engineer"
+    
+    q_lower = query.lower()
+    is_intern = "intern" in q_lower
+    
+    if "data" in q_lower or "analyst" in q_lower:
+        title_pool = [
+            "Data Analyst — Product Analytics",
+            "Senior Data Analyst — Business Intelligence",
+            "Data Analyst (Operations & Risk)",
+            "Financial Data Analyst",
+            "Lead Data Analytics Specialist"
+        ]
+    elif "python" in q_lower or "backend" in q_lower:
+        title_pool = [
+            "Backend Python Developer",
+            "Python Software Development Engineer",
+            "Senior Python Engineer (FastAPI)",
+            "Python Automation Specialist",
+            "Core Systems Python Developer"
+        ]
+    elif "ai" in q_lower or "machine" in q_lower or "ml" in q_lower:
+        title_pool = [
+            "Founding AI Engineer",
+            "Machine Learning Infra Engineer",
+            "AI Product Engineer",
+            "Machine Learning Engineer (NLP)",
+            "AI Systems Architect"
+        ]
+    elif is_intern:
+        title_pool = [
+            "AI & Machine Learning Research Intern",
+            "Data Analytics Intern",
+            "Python Software Engineering Intern",
+            "Financial Risk Analytics Intern",
+            "Machine Learning Systems Intern"
+        ]
+    else:
+        title_pool = [
+            f"{query} — Technical Specialist",
+            f"{query} — Senior Developer",
+            f"{query} — Systems Engineer",
+            f"{query} — Lead Engineer",
+            f"{query} — Associate"
+        ]
 
-    for i in range(n):
-        company = random.choice(companies)
-        skills = random.sample(skills_pool, k=random.randint(3, 6))
-        title = f"{clean_query} Intern" if is_intern else f"{clean_query} — Level {i + 1}"
+    jobs = []
+    used_titles = set()
+    for i in range(min(n, len(companies))):
+        company = companies[i]
+        title = title_pool[i % len(title_pool)]
+        if title in used_titles:
+            continue
+        used_titles.add(title)
         
-        encoded_query = clean_query.replace(" ", "%20")
+        skills = random.sample(skills_pool, k=random.randint(3, 5))
+        encoded_query = query.replace(" ", "%20")
         encoded_company = company.replace(" ", "%20")
         encoded_loc = location.replace(" ", "%20")
+        
         jobs.append(
             JobPosting(
+                id=str(uuid.uuid4()),
                 title=title,
                 company=company,
                 location=location,
-                description=f"We are looking for an ambitious {title} to join our engineering & AI teams.",
+                description=f"Opening for {title} at {company}. Required skills: {', '.join(skills)}.",
                 skills_mentioned=skills,
                 source=JobSource.LINKEDIN,
-                source_url=f"https://www.linkedin.com/jobs/search/?keywords={encoded_query}%20{encoded_company}&location={encoded_loc}",
+                source_url=f"https://www.linkedin.com/jobs/search/?keywords={encoded_query}%20{encoded_company}&location={encoded_loc}&f_TPR=r604800",
                 is_remote="remote" in location.lower(),
-                easy_apply=random.choice([True, False]),
+                is_internship=is_intern or "intern" in title.lower(),
+                easy_apply=True,
+                discovered_at=datetime.now(timezone.utc),
             )
         )
     return jobs

@@ -341,20 +341,24 @@ async def list_jobs(page: int = 1, per_page: int = 60, job_type: str = "all", se
 
     rows = []
     seen_keys = set()
+    seen_titles = set()
     for j in jobs:
         loc_lower = (j.location or "").lower()
         if any(f in loc_lower for f in FOREIGN_EXCLUDES) and not j.is_remote:
             continue
 
-        dedup_key = (j.title.strip().lower(), j.company.strip().lower())
-        if dedup_key in seen_keys:
+        clean_title = j.title.replace("(Cutshort 1-Click)", "").replace("— YC Batch S24", "").replace("— Direct Hire", "").replace("— Official Career Portal", "").strip()
+
+        dedup_key = (clean_title.lower(), j.company.strip().lower())
+        if dedup_key in seen_keys or clean_title.lower() in seen_titles:
             continue
         seen_keys.add(dedup_key)
+        seen_titles.add(clean_title.lower())
 
         p = pred_map.get(j.id)
         rows.append({
             "id": j.id,
-            "title": j.title,
+            "title": clean_title,
             "company": j.company,
             "location": j.location,
             "is_remote": j.is_remote,
